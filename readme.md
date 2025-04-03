@@ -19,7 +19,7 @@ The **linear wave dispersion equation** relates wave frequency (or period) to wa
 - **h** is the water depth.
 
 This equation is solved iteratively for the dimensionless wavenumber **k_h** (where \(k_0 = \frac{\omega^2}{g}\)). An accurate **k_h** evaluation is vital for computing wave phase speed, group velocity, and understanding various nearshore processes. Explicit approximations can bypass the need for iteration but must be chosen carefully based on accuracy requirements.
-
+![wave-disp-equation](https://github.com/user-attachments/assets/05fa2f62-6241-40df-9380-bf101c612e29)
 ## Module Contents
 
 - **Reference "Exact" Solution:** `kh_numeric()` implements the Newton-Raphson iteration method for a highly precise solution of wave dispersion, acting as a benchmark for other techniques.
