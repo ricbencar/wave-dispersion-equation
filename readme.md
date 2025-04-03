@@ -1,7 +1,7 @@
 # Wave Dispersion Equation – Linear Gravity Waves (Airy Theory)
 
 This repository provides a comprehensive suite of solutions and approximations for analyzing wave dispersion, which is essential for wave prediction, oceanographic calculations, and coastal engineering design. It includes a reference "exact" solution using the Newton-Raphson method, classical and contemporary explicit approximations, and high-order Padé approximants for high precision.
-![wave-disp-equation1](https://github.com/user-attachments/assets/850f4c87-caa3-45aa-b5f4-cc7977f3bc94)
+![wave-disp-equation1](https://github.com/user-attachments/assets/7688bf2e-b6f1-4c7b-96c9-37b3078edb3e)
 ## Background
 
 The **linear wave dispersion equation** relates wave frequency (or period) to wavenumber and water depth for gravity waves:
@@ -19,7 +19,7 @@ The **linear wave dispersion equation** relates wave frequency (or period) to wa
 - **h** is the water depth.
 
 This equation is solved iteratively for the dimensionless wavenumber **k_h** (where \(k_0 = \frac{\omega^2}{g}\)). An accurate **k_h** evaluation is vital for computing wave phase speed, group velocity, and understanding various nearshore processes. Explicit approximations can bypass the need for iteration but must be chosen carefully based on accuracy requirements.
-![wave-disp-equation2](https://github.com/user-attachments/assets/d4e756a5-0d71-467d-86d5-ead87d530bef)
+![wave-disp-equation2](https://github.com/user-attachments/assets/5dcadd0b-223b-461a-ab0f-b99fc3f55982)
 ## Module Contents
 
 - **Reference "Exact" Solution:** `kh_numeric()` implements the Newton-Raphson iteration method for a highly precise solution of wave dispersion, acting as a benchmark for other techniques.
