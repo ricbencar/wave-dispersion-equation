@@ -1,7 +1,7 @@
 # Wave Dispersion Equation – Linear Gravity Waves (Airy Theory)
 
 This repository provides a comprehensive suite of solutions and approximations for analyzing wave dispersion, which is essential for wave prediction, oceanographic calculations, and coastal engineering design. It includes a reference "exact" solution using the Newton-Raphson method, classical and contemporary explicit approximations, and high-order Padé approximants for high precision.
-![wave-disp-equation](https://github.com/user-attachments/assets/09654047-ec8c-4141-9874-13055e1b25a5)
+![wave-disp-equation1](https://github.com/user-attachments/assets/850f4c87-caa3-45aa-b5f4-cc7977f3bc94)
 ## Background
 
 The **linear wave dispersion equation** relates wave frequency (or period) to wavenumber and water depth for gravity waves:
