@@ -18,7 +18,7 @@ The **linear wave dispersion equation** relates wave frequency (or period) to wa
 
 - **h** is the water depth.
 
-his equation is solved iteratively for the dimensionless wavenumber **kh** (where k_0 = ω²/g). An accurate **kh** evaluation is vital for computing wave phase speed, group velocity, and understanding various nearshore processes. Explicit approximations can bypass the need for iteration but must be chosen carefully based on accuracy requirements.
+This equation is solved iteratively for the dimensionless wavenumber **kh** (where k_0 = ω²/g). An accurate **kh** evaluation is vital for computing wave phase speed, group velocity, and understanding various nearshore processes. Explicit approximations can bypass the need for iteration but must be chosen carefully based on accuracy requirements.
 ![wave-disp-equation2](https://github.com/user-attachments/assets/5dcadd0b-223b-461a-ab0f-b99fc3f55982)
 ## Module Contents
 
