@@ -21,7 +21,15 @@ where:
 
 - **h** is the water depth.
 
-This equation is solved iteratively for the dimensionless wavenumber **kh** (where k_0 = ω²/g). An accurate **kh** evaluation is vital for computing wave phase speed, group velocity, and understanding various nearshore processes. Explicit approximations can bypass the need for iteration but must be chosen carefully based on accuracy requirements.
+The transcendental nature of this equation prevents closed-form solutions for *k*. Therefore, it is
+nondimensionalized to:
+
+k₀h = kh · tanh(kh)
+
+This equation is solved iteratively for the dimensionless wavenumber *kh* (k₀ = ω²/g). An accurate
+*kh* evaluation is vital for computing wave phase speed, group velocity, and understanding various
+nearshore processes. Explicit approximations bypass the need for iteration but must be chosen
+carefully based on accuracy requirements.
 ![wave-disp-equation2](https://github.com/user-attachments/assets/5dcadd0b-223b-461a-ab0f-b99fc3f55982)
 ## Module Contents
 
