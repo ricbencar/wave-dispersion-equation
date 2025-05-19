@@ -6,6 +6,9 @@ This repository provides a comprehensive suite of solutions and approximations f
 
 The **linear wave dispersion equation** relates wave frequency (or period) to wavenumber and water depth for gravity waves:
 
+ω² = g · k · tanh(k · h)
+
+where:
 - **ω (omega)** is the angular frequency:  
   ω = 2π / T  
   (where T is the wave period)
