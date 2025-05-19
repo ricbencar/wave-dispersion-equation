@@ -6,7 +6,7 @@ This repository provides a comprehensive suite of solutions and approximations f
 
 The **linear wave dispersion equation** relates wave frequency (or period) to wavenumber and water depth for gravity waves:
 
-ω² = g · k · tanh(k · h)
+**ω² = g · k · tanh(k · h)**
 
 where:
 - **ω (omega)** is the angular frequency:  
@@ -24,7 +24,7 @@ where:
 The transcendental nature of this equation prevents closed-form solutions for *k*. Therefore, it is
 nondimensionalized to:
 
-k₀h = kh · tanh(kh)
+**k₀h = kh · tanh(kh)**
 
 This equation is solved iteratively for the dimensionless wavenumber *kh* (k₀ = ω²/g). An accurate
 *kh* evaluation is vital for computing wave phase speed, group velocity, and understanding various
