@@ -37,7 +37,7 @@ def kh_numeric(k0h, tol=1e-20, max_iter=1000):
     """
     if k0h == 0:
         return 0.0
-    kh = math.tanh((6/5) ** k0h * math.sqrt(k0h))  # initial guess
+    kh = k0h / math.tanh((6/5)**k0h * math.sqrt(k0h))  # initial guess
     for _ in range(max_iter):
         f = k0h - kh * math.tanh(kh)
         df = -math.tanh(kh) - kh / math.cosh(kh) ** 2

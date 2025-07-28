@@ -35,8 +35,8 @@ Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^6 : 1.268611814972e+01
   Coefficient for v^8 : 2.391135361317e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : 9.875090316603e-01
-  Coefficient for v^4 : 9.678855264470e-01
+  Coefficient for v^2 : 9.875090316601e-01
+  Coefficient for v^4 : 9.678855264472e-01
   Coefficient for v^6 : 1.147399504763e+01
   Coefficient for v^8 : 2.733571934963e+00
 Average relative error: 6.148342e-04 %
@@ -45,262 +45,262 @@ Maximum relative error: 5.928258e-03 %
 Requested Degree: 11   (Used Degree: 11)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 9.999966825968e-01
-  Coefficient for v^2 : -5.591505363531e-01
-  Coefficient for v^4 : 5.806336104967e+00
-  Coefficient for v^6 : 3.062707747711e+00
+  Coefficient for v^2 : -5.591505363539e-01
+  Coefficient for v^4 : 5.806336104969e+00
+  Coefficient for v^6 : 3.062707747708e+00
   Coefficient for v^8 : 1.350414398697e+01
-  Coefficient for v^10 : 2.002237523014e+01
+  Coefficient for v^10 : 2.002237523016e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
   Coefficient for v^2 : -1.606761166523e+00
-  Coefficient for v^4 : 6.296566983465e+00
-  Coefficient for v^6 : -2.631845293501e+00
-  Coefficient for v^8 : 1.222665535456e+01
-  Coefficient for v^10 : 1.804519754234e+00
+  Coefficient for v^4 : 6.296566983468e+00
+  Coefficient for v^6 : -2.631845293507e+00
+  Coefficient for v^8 : 1.222665535457e+01
+  Coefficient for v^10 : 1.804519754236e+00
 Average relative error: 1.341578e-05 %
 Maximum relative error: 2.919275e-04 %
 ------------------------------------------------------------
 Requested Degree: 13   (Used Degree: 13)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 9.999982183459e-01
-  Coefficient for v^2 : -2.666346193405e+00
-  Coefficient for v^4 : 6.785371316282e+00
-  Coefficient for v^6 : -8.867497039697e+00
-  Coefficient for v^8 : 6.399783115091e+00
-  Coefficient for v^10 : -9.584572700511e+00
-  Coefficient for v^12 : -3.919118311516e+01
+  Coefficient for v^2 : -2.666346193360e+00
+  Coefficient for v^4 : 6.785371316261e+00
+  Coefficient for v^6 : -8.867497039439e+00
+  Coefficient for v^8 : 6.399783115244e+00
+  Coefficient for v^10 : -9.584572699859e+00
+  Coefficient for v^12 : -3.919118311432e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -3.713798754721e+00
-  Coefficient for v^4 : 9.478110707503e+00
-  Coefficient for v^6 : -1.531941853343e+01
-  Coefficient for v^8 : 1.635236713444e+01
-  Coefficient for v^10 : -2.271605069847e+01
-  Coefficient for v^12 : -3.482073367457e+00
+  Coefficient for v^2 : -3.713798754675e+00
+  Coefficient for v^4 : 9.478110707434e+00
+  Coefficient for v^6 : -1.531941853316e+01
+  Coefficient for v^8 : 1.635236713435e+01
+  Coefficient for v^10 : -2.271605069794e+01
+  Coefficient for v^12 : -3.482073367383e+00
 Average relative error: 1.830010e-05 %
 Maximum relative error: 1.648550e-03 %
 ------------------------------------------------------------
 Requested Degree: 15   (Used Degree: 15)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 1.000000001240e+00
-  Coefficient for v^2 : -2.200693198335e+00
-  Coefficient for v^4 : 9.046610720600e+00
-  Coefficient for v^6 : -5.090097352607e+00
-  Coefficient for v^8 : 2.076473152640e+01
-  Coefficient for v^10 : 1.018558365337e+01
-  Coefficient for v^12 : 2.994725848543e+01
-  Coefficient for v^14 : 3.247761318698e+01
+  Coefficient for v^2 : -2.200693198074e+00
+  Coefficient for v^4 : 9.046610720195e+00
+  Coefficient for v^6 : -5.090097350897e+00
+  Coefficient for v^8 : 2.076473152566e+01
+  Coefficient for v^10 : 1.018558365624e+01
+  Coefficient for v^12 : 2.994725848765e+01
+  Coefficient for v^14 : 3.247761318146e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -3.247890841816e+00
-  Coefficient for v^4 : 1.124153510198e+01
-  Coefficient for v^6 : -1.378222463859e+01
-  Coefficient for v^8 : 2.510373859406e+01
-  Coefficient for v^10 : -7.915784428824e+00
-  Coefficient for v^12 : 2.347401447857e+01
-  Coefficient for v^14 : 2.477067434158e+00
-Average relative error: 3.776122e-08 %
-Maximum relative error: 1.535346e-07 %
+  Coefficient for v^2 : -3.247890841555e+00
+  Coefficient for v^4 : 1.124153510130e+01
+  Coefficient for v^6 : -1.378222463648e+01
+  Coefficient for v^8 : 2.510373859163e+01
+  Coefficient for v^10 : -7.915784424644e+00
+  Coefficient for v^12 : 2.347401447579e+01
+  Coefficient for v^14 : 2.477067433652e+00
+Average relative error: 3.776123e-08 %
+Maximum relative error: 1.535348e-07 %
 ------------------------------------------------------------
 Requested Degree: 17   (Used Degree: 17)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 9.999999952575e-01
-  Coefficient for v^2 : -3.416866006627e+00
-  Coefficient for v^4 : 1.175566184886e+01
-  Coefficient for v^6 : -1.609007281365e+01
-  Coefficient for v^8 : 2.723847440470e+01
-  Coefficient for v^10 : -1.486453055268e+01
-  Coefficient for v^12 : 1.819720306484e+01
-  Coefficient for v^14 : -1.606996915707e+00
-  Coefficient for v^16 : -3.947201227979e+01
+  Coefficient for v^2 : -3.416865994034e+00
+  Coefficient for v^4 : 1.175566182245e+01
+  Coefficient for v^6 : -1.609007270166e+01
+  Coefficient for v^8 : 2.723847434916e+01
+  Coefficient for v^10 : -1.486453029443e+01
+  Coefficient for v^12 : 1.819720320772e+01
+  Coefficient for v^14 : -1.606996525125e+00
+  Coefficient for v^16 : -3.947201189729e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -4.464064738647e+00
-  Coefficient for v^4 : 1.522421539242e+01
-  Coefficient for v^6 : -2.748705792954e+01
-  Coefficient for v^8 : 4.215871977726e+01
-  Coefficient for v^10 : -3.864197135854e+01
-  Coefficient for v^12 : 3.408217109260e+01
-  Coefficient for v^14 : -2.572937433748e+01
-  Coefficient for v^16 : -3.027990251076e+00
-Average relative error: 2.461083e-08 %
-Maximum relative error: 4.744594e-07 %
+  Coefficient for v^2 : -4.464064726055e+00
+  Coefficient for v^4 : 1.522421535282e+01
+  Coefficient for v^6 : -2.748705779128e+01
+  Coefficient for v^8 : 4.215871961421e+01
+  Coefficient for v^10 : -3.864197105426e+01
+  Coefficient for v^12 : 3.408217101418e+01
+  Coefficient for v^14 : -2.572937405484e+01
+  Coefficient for v^16 : -3.027990222330e+00
+Average relative error: 2.461022e-08 %
+Maximum relative error: 4.742805e-07 %
 ------------------------------------------------------------
 Requested Degree: 19   (Used Degree: 19)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 1.000000000201e+00
-  Coefficient for v^2 : -2.440634943594e+00
-  Coefficient for v^4 : 1.224712627222e+01
-  Coefficient for v^6 : -1.231127653996e+01
-  Coefficient for v^8 : 4.579400887963e+01
-  Coefficient for v^10 : -1.467916050441e+00
-  Coefficient for v^12 : 8.598028276375e+01
-  Coefficient for v^14 : 6.633716863417e+01
-  Coefficient for v^16 : 1.200806680122e+02
-  Coefficient for v^18 : 8.185602081626e+01
+  Coefficient for v^2 : -2.440634892441e+00
+  Coefficient for v^4 : 1.224712615692e+01
+  Coefficient for v^6 : -1.231127606057e+01
+  Coefficient for v^8 : 4.579400858780e+01
+  Coefficient for v^10 : -1.467914886497e+00
+  Coefficient for v^12 : 8.598028325902e+01
+  Coefficient for v^14 : 6.633717029674e+01
+  Coefficient for v^16 : 1.200806701732e+02
+  Coefficient for v^18 : 8.185602064738e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -3.487832429834e+00
-  Coefficient for v^4 : 1.469328523491e+01
-  Coefficient for v^6 : -2.432719129617e+01
-  Coefficient for v^8 : 5.718301123521e+01
-  Coefficient for v^10 : -4.316991333491e+01
-  Coefficient for v^12 : 8.596969033838e+01
-  Coefficient for v^14 : -1.407628170244e+00
-  Coefficient for v^16 : 6.614719471422e+01
-  Coefficient for v^18 : 5.808463602530e+00
-Average relative error: 1.108290e-09 %
-Maximum relative error: 1.420161e-08 %
+  Coefficient for v^2 : -3.487832378681e+00
+  Coefficient for v^4 : 1.469328506603e+01
+  Coefficient for v^6 : -2.432719070162e+01
+  Coefficient for v^8 : 5.718301048111e+01
+  Coefficient for v^10 : -4.316991191372e+01
+  Coefficient for v^12 : 8.596968977251e+01
+  Coefficient for v^14 : -1.407626661149e+00
+  Coefficient for v^16 : 6.614719481465e+01
+  Coefficient for v^18 : 5.808463584081e+00
+Average relative error: 1.108289e-09 %
+Maximum relative error: 1.420159e-08 %
 ------------------------------------------------------------
 Requested Degree: 21   (Used Degree: 21)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 1.000000000547e+00
-  Coefficient for v^2 : -1.900776465884e+00
-  Coefficient for v^4 : 8.535003877091e+00
-  Coefficient for v^6 : -2.261889714428e+00
-  Coefficient for v^8 : 2.056086844360e+01
-  Coefficient for v^10 : 1.931404990626e+01
-  Coefficient for v^12 : 3.591354857438e+01
-  Coefficient for v^14 : 4.525565888670e+01
-  Coefficient for v^16 : 5.260810412579e+01
-  Coefficient for v^18 : -6.203145239096e+01
-  Coefficient for v^20 : -1.300878883041e+01
+  Coefficient for v^2 : -1.900776439493e+00
+  Coefficient for v^4 : 8.535003826831e+00
+  Coefficient for v^6 : -2.261889503589e+00
+  Coefficient for v^8 : 2.056086841037e+01
+  Coefficient for v^10 : 1.931405031481e+01
+  Coefficient for v^12 : 3.591354908611e+01
+  Coefficient for v^14 : 4.525565948230e+01
+  Coefficient for v^16 : 5.260810535834e+01
+  Coefficient for v^18 : -6.203145288042e+01
+  Coefficient for v^20 : -1.300878936973e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -2.947973841952e+00
-  Coefficient for v^4 : 1.041581455245e+01
-  Coefficient for v^6 : -1.044928540543e+01
-  Coefficient for v^8 : 2.211664626979e+01
-  Coefficient for v^10 : 1.676833611044e+00
-  Coefficient for v^12 : 1.747649763179e+01
-  Coefficient for v^14 : 2.797917865249e+01
-  Coefficient for v^16 : -8.111256031241e+00
-  Coefficient for v^18 : -1.708769023586e+01
-  Coefficient for v^20 : -5.853102076503e-01
+  Coefficient for v^2 : -2.947973815562e+00
+  Coefficient for v^4 : 1.041581447456e+01
+  Coefficient for v^6 : -1.044928514483e+01
+  Coefficient for v^8 : 2.211664603515e+01
+  Coefficient for v^10 : 1.676834039525e+00
+  Coefficient for v^12 : 1.747649776811e+01
+  Coefficient for v^14 : 2.797917898233e+01
+  Coefficient for v^16 : -8.111255707233e+00
+  Coefficient for v^18 : -1.708769064212e+01
+  Coefficient for v^20 : -5.853102471424e-01
 Average relative error: 2.114642e-09 %
 Maximum relative error: 3.870360e-08 %
 ------------------------------------------------------------
 Requested Degree: 23   (Used Degree: 23)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 1.000000000695e+00
-  Coefficient for v^2 : -2.104580450600e+00
-  Coefficient for v^4 : 9.079930886545e+00
-  Coefficient for v^6 : -4.239988628823e+00
-  Coefficient for v^8 : 2.217598813380e+01
-  Coefficient for v^10 : 1.544945837650e+01
-  Coefficient for v^12 : 3.417404391407e+01
-  Coefficient for v^14 : 4.223244998600e+01
-  Coefficient for v^16 : 4.959697116000e+01
-  Coefficient for v^18 : -6.836526193116e+01
-  Coefficient for v^20 : 6.906840816611e+00
-  Coefficient for v^22 : 1.371305826743e+00
+  Coefficient for v^2 : -2.104580430773e+00
+  Coefficient for v^4 : 9.079930853871e+00
+  Coefficient for v^6 : -4.239988482449e+00
+  Coefficient for v^8 : 2.217598815131e+01
+  Coefficient for v^10 : 1.544945865929e+01
+  Coefficient for v^12 : 3.417404434949e+01
+  Coefficient for v^14 : 4.223245047813e+01
+  Coefficient for v^16 : 4.959697219573e+01
+  Coefficient for v^18 : -6.836526260945e+01
+  Coefficient for v^20 : 6.906840659164e+00
+  Coefficient for v^22 : 1.371305763335e+00
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -3.151777786644e+00
-  Coefficient for v^4 : 1.117416156673e+01
-  Coefficient for v^6 : -1.297557664665e+01
-  Coefficient for v^8 : 2.563111905971e+01
-  Coefficient for v^10 : -3.580406581352e+00
-  Coefficient for v^12 : 1.875910223942e+01
-  Coefficient for v^14 : 2.766476609913e+01
-  Coefficient for v^16 : -1.370623838188e+01
-  Coefficient for v^18 : -1.103229066271e+01
-  Coefficient for v^20 : 3.039453976220e+00
-  Coefficient for v^22 : -2.521726952357e-02
-Average relative error: 2.260284e-09 %
-Maximum relative error: 4.987732e-08 %
+  Coefficient for v^2 : -3.151777766818e+00
+  Coefficient for v^4 : 1.117416151329e+01
+  Coefficient for v^6 : -1.297557646821e+01
+  Coefficient for v^8 : 2.563111893781e+01
+  Coefficient for v^10 : -3.580406322515e+00
+  Coefficient for v^12 : 1.875910240148e+01
+  Coefficient for v^14 : 2.766476641467e+01
+  Coefficient for v^16 : -1.370623827164e+01
+  Coefficient for v^18 : -1.103229090344e+01
+  Coefficient for v^20 : 3.039453952738e+00
+  Coefficient for v^22 : -2.521727734133e-02
+Average relative error: 2.260285e-09 %
+Maximum relative error: 4.987730e-08 %
 ------------------------------------------------------------
 Requested Degree: 25   (Used Degree: 25)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 1.000000000211e+00
-  Coefficient for v^2 : -2.761701914324e+00
-  Coefficient for v^4 : 1.034618651911e+01
-  Coefficient for v^6 : -8.737835617149e+00
-  Coefficient for v^8 : 2.133475129278e+01
-  Coefficient for v^10 : 1.174954901279e+01
-  Coefficient for v^12 : 1.883597990182e+01
-  Coefficient for v^14 : 3.608678976764e+01
-  Coefficient for v^16 : 2.756628946146e+01
-  Coefficient for v^18 : -3.342948594188e+01
-  Coefficient for v^20 : -1.460522538902e+01
-  Coefficient for v^22 : 1.986423885734e+01
-  Coefficient for v^24 : -1.361561269731e+01
+  Coefficient for v^2 : -2.761701915261e+00
+  Coefficient for v^4 : 1.034618653990e+01
+  Coefficient for v^6 : -8.737835650858e+00
+  Coefficient for v^8 : 2.133475141199e+01
+  Coefficient for v^10 : 1.174954906240e+01
+  Coefficient for v^12 : 1.883598002945e+01
+  Coefficient for v^14 : 3.608679011630e+01
+  Coefficient for v^16 : 2.756628999076e+01
+  Coefficient for v^18 : -3.342948618423e+01
+  Coefficient for v^20 : -1.460522583812e+01
+  Coefficient for v^22 : 1.986423919114e+01
+  Coefficient for v^24 : -1.361561298082e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -3.808899396756e+00
-  Coefficient for v^4 : 1.312856552264e+01
-  Coefficient for v^6 : -1.872785102050e+01
-  Coefficient for v^8 : 2.901528589767e+01
-  Coefficient for v^10 : -6.114611501682e+00
-  Coefficient for v^12 : 6.811139699925e+00
-  Coefficient for v^14 : 2.829273356907e+01
-  Coefficient for v^16 : -1.013458702191e+01
-  Coefficient for v^18 : -1.541269175776e+01
-  Coefficient for v^20 : 1.108560896610e+01
-  Coefficient for v^22 : -4.405059049083e+00
-  Coefficient for v^24 : -1.354153517551e+00
-Average relative error: 8.652144e-10 %
-Maximum relative error: 1.488190e-08 %
+  Coefficient for v^2 : -3.808899397694e+00
+  Coefficient for v^4 : 1.312856554441e+01
+  Coefficient for v^6 : -1.872785107586e+01
+  Coefficient for v^8 : 2.901528604905e+01
+  Coefficient for v^10 : -6.114611559394e+00
+  Coefficient for v^12 : 6.811139742019e+00
+  Coefficient for v^14 : 2.829273394280e+01
+  Coefficient for v^16 : -1.013458708405e+01
+  Coefficient for v^18 : -1.541269196703e+01
+  Coefficient for v^20 : 1.108560908169e+01
+  Coefficient for v^22 : -4.405059130553e+00
+  Coefficient for v^24 : -1.354153548013e+00
+Average relative error: 8.652130e-10 %
+Maximum relative error: 1.488192e-08 %
 ------------------------------------------------------------
 Requested Degree: 27   (Used Degree: 27)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 1.000000000347e+00
-  Coefficient for v^2 : -2.247207855552e+00
-  Coefficient for v^4 : 8.703970874632e+00
-  Coefficient for v^6 : -3.549647708923e+00
-  Coefficient for v^8 : 1.665814907922e+01
-  Coefficient for v^10 : 1.741225876613e+01
-  Coefficient for v^12 : 2.618370949030e+01
-  Coefficient for v^14 : 3.245311039773e+01
-  Coefficient for v^16 : 4.103140473074e+01
-  Coefficient for v^18 : -5.307237198153e+01
-  Coefficient for v^20 : 1.108966277690e+01
-  Coefficient for v^22 : -3.246576018712e+00
-  Coefficient for v^24 : 9.668981728901e+00
-  Coefficient for v^26 : -1.373090892629e+01
+  Coefficient for v^2 : -2.247207844676e+00
+  Coefficient for v^4 : 8.703970856869e+00
+  Coefficient for v^6 : -3.549647622705e+00
+  Coefficient for v^8 : 1.665814908243e+01
+  Coefficient for v^10 : 1.741225895423e+01
+  Coefficient for v^12 : 2.618370975381e+01
+  Coefficient for v^14 : 3.245311069038e+01
+  Coefficient for v^16 : 4.103140546575e+01
+  Coefficient for v^18 : -5.307237239719e+01
+  Coefficient for v^20 : 1.108966272141e+01
+  Coefficient for v^22 : -3.246576122647e+00
+  Coefficient for v^24 : 9.668981912371e+00
+  Coefficient for v^26 : -1.373090911282e+01
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -3.294405294655e+00
-  Coefficient for v^4 : 1.094756908823e+01
-  Coefficient for v^6 : -1.187620305665e+01
-  Coefficient for v^8 : 1.936073640591e+01
-  Coefficient for v^10 : 3.635966477744e+00
-  Coefficient for v^12 : 9.736743390030e+00
-  Coefficient for v^14 : 2.029159800976e+01
-  Coefficient for v^16 : -3.365646033386e+00
-  Coefficient for v^18 : -1.215229942622e+01
-  Coefficient for v^20 : 8.011738956415e-01
-  Coefficient for v^22 : 7.130655182010e+00
-  Coefficient for v^24 : -5.636073118138e+00
-  Coefficient for v^26 : -1.331701526170e+00
-Average relative error: 1.257083e-09 %
-Maximum relative error: 2.445114e-08 %
+  Coefficient for v^2 : -3.294405283779e+00
+  Coefficient for v^4 : 1.094756905908e+01
+  Coefficient for v^6 : -1.187620295301e+01
+  Coefficient for v^8 : 1.936073632632e+01
+  Coefficient for v^10 : 3.635966659935e+00
+  Coefficient for v^12 : 9.736743465812e+00
+  Coefficient for v^14 : 2.029159821265e+01
+  Coefficient for v^16 : -3.365645913425e+00
+  Coefficient for v^18 : -1.215229956263e+01
+  Coefficient for v^20 : 8.011738030755e-01
+  Coefficient for v^22 : 7.130655306148e+00
+  Coefficient for v^24 : -5.636073189035e+00
+  Coefficient for v^26 : -1.331701544614e+00
+Average relative error: 1.257081e-09 %
+Maximum relative error: 2.445116e-08 %
 ------------------------------------------------------------
 Requested Degree: 29   (Used Degree: 29)
 Numerator coefficients (for u_max*v^(2j+1) terms):
   Coefficient for v^0 : 1.000000000430e+00
-  Coefficient for v^2 : -2.143915740544e+00
-  Coefficient for v^4 : 8.528495521675e+00
-  Coefficient for v^6 : -2.888383901142e+00
-  Coefficient for v^8 : 1.695896084544e+01
-  Coefficient for v^10 : 1.802717257996e+01
-  Coefficient for v^12 : 2.872621500735e+01
-  Coefficient for v^14 : 3.414347376009e+01
-  Coefficient for v^16 : 4.444440905551e+01
-  Coefficient for v^18 : -5.662064339559e+01
-  Coefficient for v^20 : 1.105223365543e+01
-  Coefficient for v^22 : 2.445463836119e-01
-  Coefficient for v^24 : 3.811662576070e+00
-  Coefficient for v^26 : -2.459251824787e+00
-  Coefficient for v^28 : 3.798695602034e+00
+  Coefficient for v^2 : -2.143915702043e+00
+  Coefficient for v^4 : 8.528495436153e+00
+  Coefficient for v^6 : -2.888383595555e+00
+  Coefficient for v^8 : 1.695896077476e+01
+  Coefficient for v^10 : 1.802717296768e+01
+  Coefficient for v^12 : 2.872621574287e+01
+  Coefficient for v^14 : 3.414347425553e+01
+  Coefficient for v^16 : 4.444441025492e+01
+  Coefficient for v^18 : -5.662064443553e+01
+  Coefficient for v^20 : 1.105223352871e+01
+  Coefficient for v^22 : 2.445467307303e-01
+  Coefficient for v^24 : 3.811662233992e+00
+  Coefficient for v^26 : -2.459251472532e+00
+  Coefficient for v^28 : 3.798695153146e+00
 Denominator coefficients (for v^(2k) terms, k>=1):
-  Coefficient for v^2 : -3.191113154834e+00
-  Coefficient for v^4 : 1.066392443896e+01
-  Coefficient for v^6 : -1.104243301339e+01
-  Coefficient for v^8 : 1.904267020424e+01
-  Coefficient for v^10 : 3.908555276304e+00
-  Coefficient for v^12 : 1.170344893385e+01
-  Coefficient for v^14 : 2.075905857987e+01
-  Coefficient for v^16 : -4.114298869624e+00
-  Coefficient for v^18 : -1.138396039614e+01
-  Coefficient for v^20 : 1.499064065971e-01
-  Coefficient for v^22 : 7.219017510801e+00
-  Coefficient for v^24 : -5.088433280563e+00
-  Coefficient for v^26 : 2.691528054907e+00
-  Coefficient for v^28 : 2.185227606989e-01
-Average relative error: 1.433759e-09 %
-Maximum relative error: 3.055935e-08 %
+  Coefficient for v^2 : -3.191113116333e+00
+  Coefficient for v^4 : 1.066392431312e+01
+  Coefficient for v^6 : -1.104243262244e+01
+  Coefficient for v^8 : 1.904266984324e+01
+  Coefficient for v^10 : 3.908555709463e+00
+  Coefficient for v^12 : 1.170344932826e+01
+  Coefficient for v^14 : 2.075905870409e+01
+  Coefficient for v^16 : -4.114298833241e+00
+  Coefficient for v^18 : -1.138396039920e+01
+  Coefficient for v^20 : 1.499061689679e-01
+  Coefficient for v^22 : 7.219017591444e+00
+  Coefficient for v^24 : -5.088433153801e+00
+  Coefficient for v^26 : 2.691527901227e+00
+  Coefficient for v^28 : 2.185227141231e-01
+Average relative error: 1.433761e-09 %
+Maximum relative error: 3.055930e-08 %
 ------------------------------------------------------------
 
 === Detailed Sample Evaluation (50 sample points) ===
