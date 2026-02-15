@@ -167,7 +167,7 @@ def pade2025(k0h, formula):
     series expansion up to a specified order. They use ratios of polynomials instead of solely
     polynomial expansions as in Taylor series, offering better accuracy, particularly around
     singularities and for functions exhibiting poles. This suite of approximations corresponds to
-    approximations derived in Carvalho (2006) using gene expression programming, to fit a ratio
+    approximations derived in Carvalho (2025) using gene expression programming, to fit a ratio
     of power series for efficient wave dispersion estimates.
 
     **Advantages of Padé Approximants:**
