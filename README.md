@@ -1,581 +1,1314 @@
-# WAVE DISPERSION EQUATION: Theoretical and Computational Documentation 
+# Linear Wave Dispersion: Theory, Numerical Methods and Computational Practice
 
-## Introduction to the Computational Framework 
+## Abstract
 
-**The repository wave-disp-equation.py represents a computational suite engineered to solve this specific physical relationship through a spectrum of methodologies, ranging from exact numerical iteration to state-of-the-art analytical approximations.** Because the fundamental relationship governing surface gravity waves is transcendental, the extraction of the wavenumber from a known wave period and water depth introduces a significant computational bottleneck in large-scale phase-resolving and spectral wave models.
+The dispersion relation for linear surface gravity waves defines the connection between wave period, wavelength and water depth. Its inversion requires a numerical root or an explicit approximation because the wavenumber appears both as a multiplier and inside a hyperbolic function. This document develops the physical model, derives the dimensionless problem, and provides a complete mathematical catalogue of the 61 methods registered in `wave-disp-equation.py`: one Newton–Raphson reference, 17 standalone approximations, 10 Yamaguchi–Nonaka expressions, 20 Carvalho expressions and 13 fractional rational approximations. Every implemented formula is given, including branch conditions and the complete coefficient sets for the rational family. Accuracy is evaluated on a detailed grid, with separate discussion of numerical error, domain restrictions and timing. A practical manual explains installation, benchmark execution, programmatic use, dimensional calculations and interpretation of the output. Additional wave theories are distinguished from the linear, gravity-only problem solved by the software.
 
-This documentation serves as a comprehensive theoretical and mathematical companion to the `wave-disp-equation.py` module. It systematically deconstructs every algorithm, explicit formulation, and Padé approximant codified within the repository, explaining the hydrodynamic origins, mathematical derivations, and computational optimization strategies. The analysis traverses classical historical approximations, nested minimax optimizations, restricted domain expansions, and the highly advanced half-integer fractional Padé approximants. 
+**Keywords:** surface gravity waves; linear dispersion; explicit inversion; Newton–Raphson; rational approximation; gene expression programming; coastal engineering.
 
----
+## 1. Physical formulation
 
-## Theoretical Foundations: Linear Gravity Waves (Airy Theory) 
-To fully contextualize the algorithms within the `wave-disp-equation.py` repository, it is imperative to establish the fluid dynamic principles from which the governing equations are derived. 
-**Airy wave theory, formally recognized as linear wave theory, provides the foundational mathematical description of surface gravity wave propagation over a homogeneous fluid layer.** 
+### 1.1 Scope and assumptions
 
-### Fluid Dynamic Assumptions and the Laplace Equation 
-The derivation of the linear dispersion relation begins with the Navier-Stokes equations, subjected to a specific set of simplifying assumptions. The fluid is assumed to be inviscid (frictionless), incompressible (constant density), and undergoing irrotational flow. The assumption of irrotationality ($\nabla \times \mathbf{u} = 0$) allows the fluid velocity vector $\mathbf{u} = (u, w)$ to be expressed as the gradient of a scalar velocity potential $\Phi(x, z, t)$ such that $\mathbf{u} = \nabla \Phi$. 
-Due to the incompressibility constraint ($\nabla \cdot \mathbf{u} = 0$), the velocity potential must satisfy the Laplace equation throughout the entire fluid domain:
+Consider a progressive wave travelling in the horizontal direction over a flat impermeable seabed. The still-water depth is constant and positive. The fluid is incompressible and inviscid, its motion is irrotational, and atmospheric pressure at the free surface is uniform. Surface tension, mean currents and density stratification are omitted. The wave amplitude is sufficiently small for linearization of the free-surface boundary conditions.
 
-$$\frac{\partial^2 \Phi}{\partial x^2} + \frac{\partial^2 \Phi}{\partial z^2} = 0$$ 
+These assumptions define the physical problem. A highly accurate numerical solution of its dispersion equation does not remove the model's physical limitations. Breaking, viscous dissipation, strong nonlinearity, rotational currents and interfacial waves require other formulations.
 
-While potential flow theory typically fails in boundary-dominated fluid mechanics, it succeeds exceptionally well for surface gravity waves because wave-induced vorticity is strictly confined to microscopic oscillatory Stokes boundary layers at the seabed and the free surface, leaving the vast majority of the water column irrotational. 
+The source [wave-disp-equation.py](wave-disp-equation.py) implements dimensionless scalar solvers and a comparison driver. It neither fits the empirical coefficients nor trains a gene-expression-programming model. The formulas attributed to Carvalho are supplied as fixed expressions; the original fitting datasets and optimization histories are not included.
 
-### Boundary Value Problem and Linearization 
-The Laplace equation is a linear, elliptic partial differential equation that requires strict boundary conditions to close the system. The fluid domain is bounded horizontally but vertically constrained by an impermeable flat seabed at $z = -h$ and a free-moving fluid surface at $z = \eta(x,t)$. 
-* **Kinematic Bed Boundary Condition:** Fluid particles cannot penetrate the solid seabed. Therefore, the vertical velocity at the bottom must be zero:
- $$\left. \frac{\partial \Phi}{\partial z} \right|_{z = -h} = 0$$ 
-* **Kinematic Free-Surface Boundary Condition:** A fluid particle that is on the free surface must remain on the free surface. The vertical velocity of the surface dictates the vertical velocity of the fluid:
- $$\frac{\partial \eta}{\partial t} + \frac{\partial \Phi}{\partial x}\frac{\partial \eta}{\partial x} = \frac{\partial \Phi}{\partial z} \quad \text{at} \quad z = \eta(x,t)$$ 
-* **Dynamic Free-Surface Boundary Condition:** The pressure at the free surface must equal the uniform atmospheric pressure. AApplying the unsteady Bernoulli equation yields:
-$$\frac{\partial \Phi}{\partial t} + \frac{1}{2}\left[ \left(\frac{\partial \Phi}{\partial x}\right)^2 + \left(\frac{\partial \Phi}{\partial z}\right)^2 \right] + g\eta = 0 \quad \text{at} \quad z = \eta(x,t)$$
+### 1.2 Coordinates and primary variables
 
-Because the free-surface conditions are evaluated at an unknown moving boundary $z = \eta(x,t)$ and contain nonlinear terms, the system is analytically intractable. 
-**Airy theory resolves this by assuming the wave amplitude $a$ is infinitesimally small compared to the wavelength $\lambda$ and water depth $h$ (i.e., small wave steepness $ak \ll 1$).** This permits the linearization of the boundary conditions and their evaluation at the mean water level ($z = 0$):
+The horizontal coordinate is $x$, the vertical coordinate is $z$, and time is $t$. The still-water surface is at $z=0$ and the seabed at $z=-h$. The instantaneous free-surface elevation is $\eta(x,t)$.
 
-$$\frac{\partial \eta}{\partial t} = \frac{\partial \Phi}{\partial z} \quad \text{at} \quad z = 0$$ 
+| Symbol | Meaning | Unit |
+| :--- | :--- | :--- |
+| $h$ | Still-water depth | m |
+| $a$ | Wave amplitude | m |
+| $T$ | Wave period | s |
+| $L$ | Wavelength | m |
+| $g$ | Gravitational acceleration | m/s² |
+| $\rho$ | Fluid density | kg/m³ |
+| $k$ | Angular wavenumber | rad/m |
+| $\omega$ | Angular frequency | rad/s |
 
-$$\frac{\partial \Phi}{\partial t} + g\eta = 0 \quad \text{at} \quad z = 0$$ 
+The wave height in the linear monochromatic model is $H=2a$. Angular wavenumber and angular frequency are defined by:
 
-### Derivation of the Dispersion Relation 
-Assuming a monochromatic, progressive harmonic wave, the free surface elevation is defined as: 
+$$ k=\frac{2\pi}{L},\qquad \omega=\frac{2\pi}{T} $$
 
-$$\Large \eta(x,t) = a \cos(kx - \omega t)$$ 
+Depth must be measured below the water level relevant to the calculation. A negative seabed elevation relative to a vertical datum is not itself a water depth. The dimensional example in Section 9 uses $g=9.80665\ \mathrm{m/s^2}$; the dimensionless functions have no gravity parameter.
 
-Where $a$ is the wave amplitude, $k$ is the angular wavenumber ($2\pi/\lambda$), and $\omega$ is the angular frequency ($2\pi/T$). 
+### 1.3 Potential-flow equations
 
-Applying separation of variables to the Laplace equation and enforcing the kinematic bed condition yields a velocity potential of the form:
+Irrotationality permits a velocity potential $\Phi$. Incompressibility then leads to Laplace's equation:
 
-$$\Large \Phi(x, z, t) = A \cosh(k(z+h)) \sin(kx - \omega t)$$ 
+$$ \mathbf{u}=(u,w)=\nabla\Phi,\qquad \nabla\times\mathbf{u}=0 $$
 
-Substituting this potential and the surface elevation into the linearized dynamic and kinematic free-surface boundary conditions establishes an eigenvalue problem. For a non-trivial solution to exist, the relationship between the temporal parameter ($\omega$) and spatial parameter ($k$) must satisfy the fundamental linear wave dispersion equation:
+$$ \nabla\cdot\mathbf{u}=0,\qquad \frac{\partial^2\Phi}{\partial x^2}+\frac{\partial^2\Phi}{\partial z^2}=0 $$
 
-$$\Large \omega^2 = g \cdot k \cdot \tanh(k \cdot h)$$ 
+The impermeable seabed imposes zero normal velocity:
 
-**This equation explicitly states that surface gravity waves are dispersive media; waves of different lengths travel at different speeds**. 
-**The phase velocity ($c_p = \omega/k$) and group velocity ($c_g = \partial\omega/\partial k$) are wholly dictated by the depth-to-wavelength ratio**. Evaluating $k$ from a known $\omega$ and $h$ is precisely the core utility of the `wave-disp-equation.py` module.
+$$ \left.\frac{\partial\Phi}{\partial z}\right|_{z=-h}=0 $$
 
-### The Transcendental Nature of the Problem and Nondimensionalization 
+At the moving free surface, the exact kinematic condition requires a surface particle to remain on the surface. The dynamic condition follows from Bernoulli's equation after choosing the atmospheric pressure as the pressure reference:
 
-In virtually all practical applications spanning oceanography and coastal engineering, the wave period $T$ (and thus $\omega$) is measured via wave buoys or synthesized by spectral models, and the bathymetric depth $h$ is acquired via hydrographic surveys. The engineer must calculate the wavenumber $k$ (and wavelength $\lambda$) to subsequently derive phase speed, group celerity, refraction indices, and shoaling coefficients. 
+$$ \eta_t+\Phi_x\eta_x=\Phi_z\qquad\text{at }z=\eta $$
 
-**However, the fundamental equation $\omega^2 = gk \tanh(kh)$ cannot be algebraically inverted to isolate $k$**. 
-**The simultaneous presence of $k$ as a linear multiplier and as the argument within the hyperbolic tangent function renders the equation mathematically transcendental**. Such equations explicitly defy closed-form analytical solutions utilizing standard elementary functions, establishing a massive computational bottleneck in large-scale models. 
+$$ \Phi_t+\frac{1}{2}(\Phi_x^2+\Phi_z^2)+g\eta=0\qquad\text{at }z=\eta $$
 
-To computationally attack the problem, the `wave-disp-equation.py` repository first standardizes the equation into a universally applicable dimensionless form. By defining the deep-water wavenumber $k_0 = \omega^2/g$ (which corresponds to a deep-water wavelength $L_0 = gT^2/2\pi$), the dispersion relation transforms into:
+Here a subscript denotes partial differentiation. These conditions are nonlinear because they contain products of unknown quantities and are applied at an unknown boundary.
 
-$$\Large k_0 h = kh \cdot \tanh(kh)$$ 
+### 1.4 Linearization and wave solution
 
-To simplify the mathematical notation utilized throughout the module's algorithms, the independent dimensionless deep-water parameter is defined as $\alpha = k_0h$, and the dependent dimensionless wavenumber is defined as $\beta = kh$. 
-The canonical equation thus becomes:
+When wave steepness and relative amplitude are small, terms of second and higher order in amplitude are neglected and the surface conditions are evaluated at $z=0$. The formal smallness requirements include $ka\ll1$ and $a/h\ll1$; shallow-water nonlinearity can require additional attention even when steepness is small.
 
-$$\Large \alpha = \beta \tanh \beta$$ 
+$$ \eta_t=\Phi_z,\qquad \Phi_t+g\eta=0\qquad\text{at }z=0 $$
 
-**The entire algorithmic architecture of `wave-disp-equation.py` is singularly dedicated to mapping the known input $\alpha$ to the unknown output $\beta$ efficiently, accurately, and stably across all possible hydrodynamic depth regimes**.
+A monochromatic progressive solution can be expressed as:
 
-### Asymptotic Limits: The Physical and Mathematical Boundaries
+$$ \eta(x,t)=a\cos(kx-\omega t) $$
 
-The design of the computational algorithms relies heavily on the asymptotic behavior of the hyperbolic tangent function ($\tanh \beta \rightarrow \beta$ as $\beta \rightarrow 0$, and $\tanh \beta \rightarrow 1$ as $\beta \rightarrow \infty$). **Because the transitional intermediate depths lack a closed-form analytical solution, explicit approximations and fractional Padé polynomials (like Carvalho's 2025 formulas) are structurally anchored to these two extreme physical boundaries to guarantee global mathematical stability**. 
+$$ \Phi(x,z,t)=A\cosh(k(z+h))\sin(kx-\omega t) $$
 
-* **Deep Water Limit ($\alpha \rightarrow \infty$):** Physically, this hydrodynamic regime occurs when the water depth is significantly greater than half the wavelength ($h/L_0 > 0.5$). In this domain, the sub-surface wave orbital motions decay exponentially with depth and dissipate entirely before interacting with the seabed. Mathematically, as the argument $\beta \rightarrow \infty$, the hyperbolic tangent geometrically flattens and approaches unity ($\tanh \beta \rightarrow 1$). 
-    The canonical dispersion equation thus reduces to:
+The dynamic condition fixes the potential amplitude:
 
-    $$\Large \beta \approx \alpha$$
+$$ A=\frac{ag}{\omega\cosh(kh)} $$
 
-    **This strict equality implies that $kh \approx k_0h$, meaning the local wavenumber $k$ converges entirely to the deep-water wavenumber $k_0$, and the local wavelength $L$ exactly equals $L_0$**. 
-    By substituting $k = \omega^2/g$, the phase speed becomes:
+Substitution into the kinematic condition gives the linear gravity-wave dispersion relation:
 
-    $$\Large c_p = \frac{\omega}{k} \approx \frac{\omega}{k_0} = \frac{\omega}{\omega^2 / g} = \frac{g}{\omega} = \frac{g}{2\pi}T$$
+$$ \omega^2=gk\tanh(kh) $$
 
-    **In the deep-water limit, the phase speed is directly proportional to the wave period $T$ and completely independent of the bathymetric depth $h$**. This frequency-dependent velocity represents pure dispersion and explains why long-period ocean swells outrun short-period wind chop across open ocean basins.
+The relation is exact within the linear model. Its numerical inversion and the model's physical approximation are distinct sources of uncertainty.
 
-* **Shallow Water Limit ($\alpha \rightarrow 0$):** Physically, this regime occurs when waves propagate into very thin nearshore water layers ($h/L_0 < 0.05$). Here, the wave orbital motions become highly compressed and elliptical, dragging heavily against the solid seabed. Mathematically, by applying a Maclaurin series expansion for small arguments, $\tanh(\beta) \approx \beta - \beta^3/3 + \dots \approx \beta$. 
-    Substituting this linear approximation into the canonical dispersion relation yields:
+### 1.5 Derived wavelength and propagation speeds
 
-    $$\Large \alpha \approx \beta \cdot (\beta) = \beta^2$$
+Once the positive wavenumber is known, wavelength and phase speed follow directly. Differentiation of the dispersion relation at fixed depth gives group speed:
 
-    Taking the square root mathematically isolates the dependent variable:
+$$ L=\frac{2\pi}{k},\qquad c_p=\frac{\omega}{k}=\frac{L}{T} $$
 
-    $$\Large \beta \approx \sqrt{\alpha}$$
+$$ c_p=\frac{g}{\omega}\tanh(kh) $$
 
-    **By unpacking the dimensional parameters ($k \cdot h \approx \sqrt{\frac{\omega^2}{g} \cdot h}$), we extract the shallow-water wavenumber. In this regime, phase speed becomes:**
+$$ c_g=\frac{\partial\omega}{\partial k}=\frac{c_p}{2}\left[1+\frac{2kh}{\sinh(2kh)}\right] $$
 
-    $$\Large c_p = \frac{\omega}{k} = \frac{\omega}{\frac{\omega}{\sqrt{gh}}} = \sqrt{gh}$$
+The mean energy per unit horizontal area for a linear wave is:
 
-    **Crucially, this phase speed is entirely dictated by depth ($h$) and is completely independent of wavelength or frequency, resulting in a strictly non-dispersive wave profile**. In shallow water, all waves (regardless of their period) travel at the exact same velocity, which is the fundamental mechanism driving wave shoaling and forcing the uniform parallel alignment of wave crests to the coastline via refraction.
+$$ E=\frac{1}{2}\rho ga^2=\frac{1}{8}\rho gH^2 $$
 
----
+At fixed amplitude, this energy expression does not independently depend on wavenumber. Wavenumber nevertheless enters orbital velocities, phase and group speeds, and factors used in wave-energy flux and momentum-flux calculations.
 
-## Exact Numerical Resolution: The Newton-Raphson Implementation 
-**The module establishes its baseline of mathematical truth through the `kh_numeric(k0h, tol=1e-15, max_iter=100)` function, which utilizes the Newton-Raphson iterative root-finding algorithm to converge upon a numerically exact solution.** 
+## 2. Dimensionless inversion problem
 
-### Algorithmic Mechanics 
-The Newton-Raphson method isolates the root of an objective function $f(\beta) = 0$. 
-Using the non-dimensionalized variables, the residual function is established as:
+### 2.1 Input and output
 
-$$f(\beta_n) = \alpha - \beta_n \tanh(\beta_n)$$ 
+Define the deep-water wavenumber and wavelength from frequency alone:
 
-To apply the Newton-Raphson update, the analytical derivative (Jacobian) of the residual function with respect to the unknown $\beta$ must be derived. Applying the product rule and acknowledging that $\frac{d}{d\beta}\tanh(\beta) = \text{sech}^2(\beta)$ yields:
+$$ k_0=\frac{\omega^2}{g},\qquad L_0=\frac{2\pi}{k_0}=\frac{gT^2}{2\pi} $$
 
-$$f'(\beta_n) = -\tanh(\beta_n) - \beta_n \text{sech}^2(\beta_n)$$ 
+The dimensionless independent variable and unknown are:
 
-Within `wave-disp-equation.py`, this derivative is computationally implemented utilizing the fundamental identity $\text{sech}(\beta) = 1/\cosh(\beta)$:
+$$ \alpha=k_0h=\frac{4\pi^2h}{gT^2},\qquad \beta=kh $$
+
+The governing equation becomes:
+
+$$ \alpha=\beta\tanh\beta $$
+
+In the code, `k0h` means $\alpha$, and the returned value means $\beta$. Neither value is a dimensional wavenumber. Recover dimensional quantities only after dividing or multiplying by the appropriate depth:
+
+$$ k=\frac{\beta}{h},\qquad L=\frac{2\pi h}{\beta},\qquad \frac{L}{L_0}=\frac{\alpha}{\beta} $$
+
+For a positive input, the function $\beta\tanh\beta$ increases continuously from zero to infinity. There is therefore exactly one positive root. The case $\alpha=0$ has the mathematical limiting solution $\beta=0$, but not every implemented expression evaluates that limit without a special guard.
+
+### 2.2 Shallow- and deep-water limits
+
+For small dimensionless wavenumber, the hyperbolic tangent has the expansion:
+
+$$ \tanh\beta=\beta-\frac{\beta^3}{3}+\frac{2\beta^5}{15}+\cdots $$
+
+Consequently:
+
+$$ \alpha\sim\beta^2,\qquad \beta\sim\sqrt{\alpha},\qquad k\sim\frac{\omega}{\sqrt{gh}} $$
+
+$$ L\sim T\sqrt{gh},\qquad c_p\sim c_g\sim\sqrt{gh} $$
+
+For large dimensionless wavenumber, the hyperbolic tangent approaches one:
+
+$$ \tanh\beta\to1,\qquad \beta\sim\alpha,\qquad k\sim k_0,\qquad L\sim L_0 $$
+
+$$ c_p\sim\frac{g}{\omega}=\frac{gT}{2\pi},\qquad c_g\sim\frac{c_p}{2} $$
+
+The common practical depth classifications use the local wavelength: shallow water is approximately $h/L<0.05$ and deep water approximately $h/L>0.5$. They are convenient classifications rather than abrupt physical transitions. Ratios involving $L_0$ must not be substituted for ratios involving $L$ without accounting for their difference.
+
+### 2.3 Error variables
+
+Let $\beta_r$ denote the numerical reference and $\beta_a$ an approximation. For fixed input period and depth:
+
+$$ \delta_\beta=\frac{\beta_a-\beta_r}{\beta_r}=\frac{k_a-k_r}{k_r}=\delta_k $$
+
+Wavelength and phase speed depend on the reciprocal wavenumber:
+
+$$ \delta_L=\delta_{c_p}=-\frac{\delta_k}{1+\delta_k} $$
+
+Thus signed wavelength and wavenumber errors have opposite signs and slightly different magnitudes. Absolute percentages quoted for different quantities are not interchangeable. For a phase-resolving calculation over a distance $x$, the phase discrepancy is:
+
+$$ \Delta\theta=x\Delta k $$
+
+These relationships help select an accuracy requirement appropriate to the application. A sampled percentage error alone does not establish whether an approximation is adequate for every propagation distance or model.
+
+## 3. Numerical reference and correction operator
+
+### 3.1 Newton–Raphson method
+
+The reference function is `kh_numeric(k0h, tol=1e-15, max_iter=100)`. It solves the residual equation:
+
+$$ f(\beta)=\alpha-\beta\tanh\beta=0 $$
+
+$$ f'(\beta)=-\tanh\beta-\frac{\beta}{\cosh^2\beta} $$
+
+Newton's update is:
+
+$$ \beta_{n+1}=\beta_n-\frac{\alpha-\beta_n\tanh\beta_n}{-\tanh\beta_n-\beta_n/\cosh^2\beta_n} $$
+
+The first derivative is strictly negative for positive $\beta$. The residual has an inflection near $\beta=1.200$, but this is not a horizontal tangent and does not itself imply Newton divergence. The second derivative makes the distinction explicit:
+
+$$ f''(\beta)=\frac{2}{\cosh^2\beta}(\beta\tanh\beta-1) $$
+
+### 3.2 Initial estimate and stopping rule
+
+The implementation uses the Carvalho-style initial estimate:
+
+$$ \beta_0=\frac{\alpha}{\tanh((6/5)^\alpha\sqrt{\alpha})} $$
+
+This is also Carvalho formula 10 in Section 6. It has the correct leading shallow- and deep-water limits and gives a close starting value on the comparison interval.
+
+At each step, the implementation calculates $\Delta\beta=f/f'$, subtracts it from the current estimate, and terminates when:
+
+$$ \left|\frac{\Delta\beta}{\beta_n}\right|<10^{-15} $$
+
+The tolerance is a relative correction criterion, not a rigorous bound on the root error. If the maximum iteration count is reached, the function returns the last estimate without raising a convergence exception. At zero input it returns zero immediately. Negative and non-finite inputs are not comprehensively validated.
+
+The word “exact” in some source comments means this numerical reference. It does not mean a symbolic solution, arbitrary precision, or an independently certified floating-point result.
+
+### 3.3 A reusable one-step correction
+
+Several registered approximations consist of an explicit seed followed by one Newton correction. Define the operator:
+
+$$ \mathcal{N}(b;\alpha)=b-\frac{\alpha-b\tanh b}{-\tanh b-b/\cosh^2b} $$
+
+Equivalent forms useful for checking the implementations are:
+
+$$ \mathcal{N}(b;\alpha)=\frac{\alpha+b^2/\cosh^2b}{\tanh b+b/\cosh^2b} $$
+
+$$ \mathcal{N}(b;\alpha)=\frac{b^2+\alpha\cosh^2b}{b+\sinh b\cosh b} $$
+
+The equivalence is algebraic. Floating-point overflow and rounding can differ between forms. A fixed single correction is an approximation; it does not apply a convergence test and need not achieve machine precision.
+
+### 3.4 Notation for the formula catalogue
+
+Every expression below returns an approximation to $\beta=kh$ for a positive $\alpha$. The symbols $B$, $Y_j$, $C_j$ and $P_j$ denote particular method outputs, not new independent physical variables. Hyperbolic cotangent means $\coth x=1/\tanh x$.
+
+The catalogue specifies the implemented coefficient values and branch thresholds. Method years and spellings identify registered code labels; historical attribution is discussed separately in the bibliography. Algebraically identical methods remain listed because they appear as separate entries in the benchmark.
+
+## 4. Standalone explicit approximations
+
+### 4.1 Eckart
+
+Function: `eckart1951`. The formula joins the leading shallow- and deep-water limits using one hyperbolic tangent:
+
+$$ \beta_E=\frac{\alpha}{\sqrt{\tanh\alpha}} $$
+
+Equivalently, its approximate wavelength is:
+
+$$ L_E=L_0\sqrt{\tanh\alpha} $$
+
+Its small expression size is useful for comparison, although its maximum sampled error is larger than that of the more refined methods.
+
+### 4.2 Iwagaki
+
+Function: `iwagaki2007`. The source describes an Iwagaki expression reproduced in the Yamaguchi–Nonaka comparison:
+
+$$ \beta_I=\frac{\alpha}{\tanh\left[\sqrt{\alpha}\left(1+\frac{\sqrt{\alpha}}{2\pi}\right)\right]} $$
+
+This is identical to Yamaguchi formula 3 in the implementation.
+
+### 4.3 Fenton and McKee
+
+Function `fenton_mckee1990_1` applies the correction operator to the Eckart seed:
+
+$$ b=\frac{\alpha}{\sqrt{\tanh\alpha}},\qquad \beta_{FM1}=\mathcal{N}(b;\alpha) $$
+
+Its implemented numerator and denominator are:
+
+$$ \beta_{FM1}=\frac{\alpha+b^2\mathrm{sech}^2b}{\tanh b+b\mathrm{sech}^2b} $$
+
+Function `fenton_mckee1990_2` is the generalized hyperbolic-power approximation with exponent parameter $m=1.5$:
+
+$$ \beta_{FM2}=\frac{\alpha}{[\tanh(\alpha^{3/4})]^{2/3}} $$
+
+The underlying parametric form is:
+
+$$ F_m(\alpha)=\alpha[\coth(\alpha^{m/2})]^{1/m} $$
+
+Other fitted values of $m$ appear in the Yamaguchi family. The two Fenton–McKee code functions are therefore distinct computational constructions, not two names for the same expression.
+
+### 4.4 Hunt: fifth-order denominator
+
+Function: `hunt1979_5`.
+
+$$ \beta_{H5}=\left[\alpha^2+\frac{\alpha}{D_5(\alpha)}\right]^{1/2} $$
+
+$$ D_5(\alpha)=1+0.6522\alpha+0.4622\alpha^2+0.0864\alpha^4+0.0675\alpha^5 $$
+
+There is no cubic term in this implemented denominator. The final square root is essential; the rational expression alone gives the square of the dimensionless wavenumber.
+
+### 4.5 Hunt: ninth-order denominator
+
+Function: `hunt1979_9`.
+
+$$ \beta_{H9}=\left[\alpha^2+\frac{\alpha}{1+\sum_{j=1}^{9}d_j\alpha^j}\right]^{1/2} $$
+
+The full coefficient set below follows the source, including the seventh and ninth coefficients.
+
+| $j$ | $d_j$ |
+| ---: | ---: |
+| 1 | 0.6666666667 |
+| 2 | 0.3555 |
+| 3 | 0.16084 |
+| 4 | 0.0632 |
+| 5 | 0.02174 |
+| 6 | 0.00654 |
+| 7 | 0.00171 |
+| 8 | 0.00039 |
+| 9 | 0.00011 |
+
+The Python code evaluates a sum of powers and a square root. A Horner implementation could reorganize the arithmetic, but that is not the evaluation sequence used in this version.
+
+### 4.6 Wu and Thornton
+
+Function: `wu_thornton1986`. The switching point is $\alpha=0.4\pi$, corresponding to $h/L_0=0.2$.
+
+For $\alpha\le0.4\pi$:
+
+$$ \beta_{WT}=\sqrt{\alpha}\left[1+\frac{\alpha}{6}\left(1+\frac{\alpha}{5}\right)\right] $$
+
+For $\alpha>0.4\pi$, define:
+
+$$ y=\alpha[1+1.26\exp(-1.84\alpha)] $$
+
+$$ \beta_{WT}=\alpha[1+2\exp(-2y)(1+\exp(-2y))] $$
+
+The branch decision is part of the formula. A different switching point changes the implemented approximation and its error statistics.
+
+### 4.7 Nielsen and You
+
+Functions: `nielsen1982` and `you2002`. These two functions implement exactly the same piecewise expression.
+
+For $\alpha\le2$:
+
+$$ \beta_{NY}=\sqrt{\alpha}\left(1+\frac{\alpha}{3}+\frac{4\alpha^2}{45}+\frac{16\alpha^3}{945}\right)^{1/2} $$
+
+For $\alpha>2$:
+
+$$ \beta_{NY}=\alpha[1+2\exp(-2\alpha)] $$
+
+They therefore have the same calculated accuracy, apart from possible formatting or measurement differences. Their distinct labels preserve the source's organization and associated references.
+
+### 4.8 Gilbert
+
+Function: `gilbert2000`. For $\alpha\le1$:
+
+$$ \beta_G=\sqrt{\alpha}(1+0.2\alpha) $$
+
+For $\alpha>1$:
+
+$$ \beta_G=\alpha[1+0.2\exp(2-2\alpha)] $$
+
+Both expressions give 1.2 at the switch. This continuity does not by itself establish continuity of derivatives or a global accuracy bound.
+
+### 4.9 Guo
+
+Function: `guo2002`.
+
+$$ \beta_{Guo}=\frac{\alpha}{[1-\exp(-\alpha^{m/2})]^{1/m}},\qquad m=2.4901 $$
+
+The fitted parameter must be preserved. The Yamaguchi family contains a related expression with a different value of $m$.
+
+### 4.10 Guan and Ju
+
+Function: `guan2005`.
+
+$$ \beta_{GJ}=\sqrt{\alpha}\exp(-1.115\alpha)+\alpha\tanh(1.325\sqrt{\alpha}) $$
+
+The first term contributes principally at small input and the second approaches the deep-water behaviour as input increases.
+
+### 4.11 Beji
+
+Function: `beji2013`. Define the Beji estimate $B(\alpha)$ by:
+
+$$ B(\alpha)=\frac{\alpha}{\sqrt{\tanh\alpha}}[1+\alpha^{1.09}\exp(-1.55-1.30\alpha-0.216\alpha^2)] $$
+
+The expression combines the Eckart denominator with an additive exponential correction.
+
+### 4.12 Vatankhah and Aghashariatmadari
+
+Function `vatankhah2013_2` implements the shorter exponential correction:
+
+$$ \beta_{V2}=\frac{\alpha+\alpha^2\exp(-1.835-1.225\alpha^{1.35})}{\sqrt{\tanh\alpha}} $$
+
+Function `vatankhah2013_1` implements a sum of two terms:
+
+$$ \beta_{V1}=A_V(\alpha)+B_V(\alpha) $$
+
+$$ A_V(\alpha)=\frac{\alpha+\alpha^2\exp[-(3.2+\alpha^{1.65})]}{\sqrt{\tanh\alpha}} $$
+
+$$ B_V(\alpha)=\alpha[1-\exp(-\alpha^{0.132})]^{5.0532+2.1584\alpha^{1.505}} $$
+
+The function names and registered labels distinguish these two expressions: suffix 1 denotes the split expression, while suffix 2 denotes the shorter exponential correction.
+
+### 4.13 Simarro and Orfila
+
+Function: `Simarro_2013`. The Beji estimate is followed by one Newton correction:
+
+$$ \beta_{SO}=\mathcal{N}(B(\alpha);\alpha) $$
+
+Writing $b=B(\alpha)$ gives the expression evaluated by the function:
+
+$$ \beta_{SO}=\frac{b^2+\alpha\cosh^2b}{b+\sinh b\cosh b} $$
+
+The resulting error is much smaller than the seed error on the comparison grid. It remains a finite approximation error and must not be equated with symbolic exactness or guaranteed machine precision.
+
+### 4.14 Yu
+
+Function: `yu2014`.
+
+$$ q=2[\tanh\alpha]^{2.5}-1 $$
+
+$$ \beta_{Yu}=\frac{\alpha}{\sqrt{\tanh\alpha}}+0.0527\sin(\arccos q) $$
+
+For a positive real input, the mathematical argument $q$ lies in the interval from minus one to one. The source evaluates the inverse cosine directly, without a separate clipping operation.
+
+## 5. Yamaguchi–Nonaka family: all ten expressions
+
+The selector call is `YamaguchiNonaka(k0h, formula)`, where `formula` is an integer from 1 to 10. Denote the resulting approximation by $Y_j(\alpha)$. A zero-input guard returns zero before the selector is evaluated. For positive input, an unsupported selector returns the sentinel value `-1`.
+
+### 5.1 Generalized hyperbolic forms: formulas 1 and 5
+
+Using $F_m$ from Section 4.3:
+
+$$ Y_1(\alpha)=F_{1.485}(\alpha)=\alpha[\coth(\alpha^{1.485/2})]^{1/1.485} $$
+
+$$ Y_5(\alpha)=F_{1.434}(\alpha)=\alpha[\coth(\alpha^{1.434/2})]^{1/1.434} $$
+
+### 5.2 Nested substitution: formulas 2 and 8
+
+The initial fitted hyperbolic estimate is substituted into a rearrangement of the dispersion relation:
+
+$$ Y_2(\alpha)=\frac{\alpha}{\tanh[F_{1.378}(\alpha)]} $$
+
+$$ Y_8(\alpha)=\frac{\alpha}{\tanh[F_{1.310}(\alpha)]} $$
+
+These are fixed substitutions, not Newton corrections. Their internal parameter values are part of the fitted expressions.
+
+### 5.3 Iwagaki and algebraic forms: formulas 3 and 4
+
+$$ Y_3(\alpha)=\frac{\alpha}{\tanh[\sqrt{\alpha}(1+\sqrt{\alpha}/(2\pi))]} $$
+
+$$ Y_4(\alpha)=\alpha(1+\alpha^{-2})^{1/4} $$
+
+Formula 3 duplicates `iwagaki2007`. Formula 4 uses algebraic powers only, but can still be sensitive to intermediate overflow or underflow at extreme inputs.
+
+### 5.4 Hyperbolic and exponential forms: formulas 6, 7 and 9
+
+$$ Y_6(\alpha)=\frac{\alpha}{\tanh(\sqrt{\sinh\alpha})} $$
+
+$$ Y_7(\alpha)=\frac{\alpha}{[1-\exp(-\alpha^{2.445/2})]^{1/2.445}} $$
+
+$$ Y_9(\alpha)=\frac{\alpha}{\tanh(1.1965^\alpha\sqrt{\alpha})} $$
+
+The differences between 2.445 and Guo's 2.4901, and between 1.1965 and Carvalho's 1.2 base, must be retained when reproducing the benchmark.
+
+### 5.5 Nested hyperbolic expression: formula 10
+
+Define a common denominator factor:
+
+$$ Q(\alpha)=[\tanh\alpha]^{1/4}\sqrt{\tanh(\sqrt{\sinh\alpha})} $$
+
+Then:
+
+$$ Y_{10}(\alpha)=\frac{\alpha}{\tanh[\alpha/Q(\alpha)]} $$
+
+This duplicates Carvalho formula 3. The common factor $Q$ is also used by Carvalho formulas 1 and 9.
+
+## 6. Carvalho family: all twenty expressions
+
+The selector call is `carvalho2025(k0h, formula)`, with an integer selector from 1 to 20. The notation $C_j$ below corresponds exactly to the source selector. Unlike several standalone routines, the family has no common zero-input guard. The formulas in this section are therefore stated for positive input.
+
+### 6.1 Corrected nested estimate: formula 1
+
+The seed is Carvalho formula 3 and the final result uses the correction operator:
+
+$$ b=C_3(\alpha)=\frac{\alpha}{\tanh[\alpha/Q(\alpha)]} $$
+
+$$ C_1(\alpha)=\mathcal{N}(b;\alpha)=\frac{b^2+\alpha\cosh^2b}{b+\sinh b\cosh b} $$
+
+This distinguishes formula 1 from an uncorrected explicit estimate. Its cost includes both the nested seed and the correction.
+
+### 6.2 Piecewise fitted approximation: formula 2
+
+For $0<\alpha\le1.2$:
+
+$$ C_2(\alpha)=\frac{\sqrt{1/\alpha-\exp(\alpha^{1.962983}-6.242035)}}{1/\alpha-0.168659434} $$
+
+For $1.2<\alpha\le2.35$, define two shorter expressions:
+
+$$ U_2=\alpha+(\alpha/70.13327717)^{\alpha^3} $$
+
+$$ V_2=\exp\left[\frac{\ln(4.89859^\alpha)}{1.134674-10^\alpha}\right],\qquad C_2(\alpha)=\frac{U_2}{V_2} $$
+
+For $\alpha>2.35$:
+
+$$ C_2(\alpha)=\alpha\exp\left(\frac{1.596671172\alpha}{10^\alpha}\right) $$
+
+Both the thresholds and the complete decimal coefficients are required. Continuity near the switches and behaviour outside the comparison interval should be assessed separately when the formula is reused.
+
+### 6.3 Nested hyperbolic approximations: formulas 3, 4 and 7
+
+$$ C_3(\alpha)=\frac{\alpha}{\tanh[\alpha/Q(\alpha)]}=Y_{10}(\alpha) $$
+
+For formula 4, a sequence of intermediate quantities avoids a long nested fraction while preserving every operation:
+
+$$ r_0=\sinh(\tanh\sqrt{\alpha}),\qquad r_1=\tanh(\alpha/r_0) $$
+
+$$ r_2=\tanh(\alpha/r_1),\qquad r_3=\tanh(\alpha/r_2) $$
+
+$$ C_4(\alpha)=\frac{\alpha}{r_3} $$
+
+Formula 7 uses one fewer nested level:
+
+$$ C_7(\alpha)=\frac{\alpha}{r_2} $$
+
+The $r_j$ quantities are temporary dimensionless values. They are not iteration states of a convergence loop.
+
+### 6.4 Fitted exponential bridges: formulas 5 and 6
+
+$$ C_5(\alpha)=\frac{\alpha}{\tanh[1.199315^{\alpha^{1.047086}}\alpha^{0.499947}]} $$
+
+$$ C_6(\alpha)=\frac{\alpha}{\tanh[1.1999^{\alpha^{1.045}}\sqrt{\alpha}]} $$
+
+Formula 5 can also be written directly for wavelength:
+
+$$ L_{C5}=L_0\tanh[1.199315^{\alpha^{1.047086}}\alpha^{0.499947}] $$
+
+The exponent 0.499947 is deliberately different from 0.5. Its small difference matters for the fitted curve and means that the leading mathematical power is not exactly the shallow-water power in the limit of arbitrarily small input. Good accuracy on a finite interval does not establish exact asymptotic matching.
+
+### 6.5 Capped intermediate argument: formula 8
+
+$$ a_c=\min(\alpha,3.04425) $$
+
+$$ C_8(\alpha)=\frac{\alpha}{\tanh[\sinh(\sqrt{a_c})\cosh(\alpha/5.194671)]} $$
+
+The cap applies only inside the square root and hyperbolic sine; the remaining appearances of $\alpha$ use the original input.
+
+### 6.6 Hyperbolic product and exponential seeds: formulas 9–11
+
+$$ C_9(\alpha)=\frac{\alpha}{Q(\alpha)} $$
+
+$$ C_{10}(\alpha)=\frac{\alpha}{\tanh[(6/5)^\alpha\sqrt{\alpha}]} $$
+
+$$ C_{11}(\alpha)=\frac{\alpha}{\tanh[\sqrt{1.438995^\alpha\alpha}]} $$
+
+Formula 10 is the seed of the iterative reference. Formula 9 is an uncorrected product-denominator approximation, whereas formula 3 adds an outer hyperbolic substitution to it.
+
+### 6.7 Nested and additive forms: formulas 12 and 13
+
+$$ C_{12}(\alpha)=\frac{\alpha}{\tanh\left[\frac{\alpha}{\tanh(\sinh\sqrt{\alpha})}\right]} $$
+
+$$ C_{13}(\alpha)=\alpha+\frac{\sqrt{\alpha}}{4.35144^\alpha+0.718409/(1/\alpha)^{0.437408}} $$
+
+The second denominator term in formula 13 is algebraically equal to $0.718409\alpha^{0.437408}$ for positive input. The form above follows the source evaluation.
+
+### 6.8 Variable-power and product forms: formulas 14–17
+
+$$ C_{14}(\alpha)=\frac{\alpha}{[\tanh\sqrt{\alpha}]^{1/\cosh\alpha}} $$
+
+$$ C_{15}(\alpha)=\frac{\alpha}{\sqrt{\tanh\alpha}\,\tanh(\alpha+1/\sqrt{\alpha})} $$
+
+$$ C_{16}(\alpha)=\frac{\alpha}{[\tanh\alpha]^{(\alpha+4)/8}} $$
+
+$$ C_{17}(\alpha)=\frac{\alpha}{\left\{[\tanh\alpha]^{\alpha/\tanh\alpha}\right\}^{1/2}} $$
+
+### 6.9 Remaining compact expressions: formulas 18–20
+
+$$ C_{18}(\alpha)=\frac{\alpha}{\tanh(\sinh\sqrt{\alpha})} $$
+
+$$ C_{19}(\alpha)=\sqrt{\alpha}+\frac{\alpha^2}{\alpha+4} $$
+
+$$ C_{20}(\alpha)=\frac{\alpha}{\left\{[\sqrt{\tanh\alpha}]^{\tanh\alpha+4}\right\}^{1/4}} $$
+
+Different algebraic constructions can produce similar maximum errors but different distributions of error across depth. The full benchmark is more informative than a ranking based only on expression length.
+
+## 7. Fractional rational family: all thirteen coefficient sets
+
+### 7.1 General representation
+
+The selector call is `pade2025(k0h, formula)`, with selectors 1–13. The source calls these Padé approximants. A classical Padé construction matches a Taylor expansion to a specified order; the code provides fitted coefficients but not a derivation establishing that matching property. The term **fractional rational approximation** describes the implemented form without requiring that additional claim.
+
+For selector $r$, let $m=r+1$. Every expression can be written as:
+
+$$ P_r(\alpha)=\sqrt{\alpha}\,\frac{A_r(\alpha)}{B_r(\alpha)} $$
+
+$$ A_r(\alpha)=\sum_{j=0}^{m}a_j\alpha^j,\qquad B_r(\alpha)=\sum_{j=0}^{m}b_j\alpha^j,\qquad b_0=1 $$
+
+The tables below provide **all coefficients**, without omitted terms or rounded shorthand. An entry written in scientific notation retains the numeric literal used in the source. For example, a coefficient shown as `8.4e-5` would mean $8.4\times10^{-5}$. The actual coefficients below are not reduced to that example's precision.
+
+### 7.2 Domain and asymptotic behaviour
+
+The function documentation describes an intended interval from zero to $2\pi$, but the function does not enforce that interval. Unsupported selectors return `-1`. At zero input, the implemented valid rational expressions evaluate to zero; this does not eliminate the need to check the denominator and conditioning elsewhere.
+
+For small positive input:
+
+$$ P_r(\alpha)\sim a_0\sqrt{\alpha} $$
+
+The leading coefficient is close to one, but generally not exactly one. For large input, when the displayed leading numerator and denominator coefficients are nonzero:
+
+$$ P_r(\alpha)\sim\frac{a_m}{b_m}\sqrt{\alpha} $$
+
+This is not the exact deep-water behaviour $\beta\sim\alpha$. Consequently, excellent agreement within the fitted interval must not be interpreted as permission for unrestricted deep-water extrapolation. Higher polynomial degree alone does not guarantee monotonic improvement in maximum error or numerical conditioning.
+
+### 7.3 Formula 1: `Pade(2025)_1`
+
+$$ P_1(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{2}a_j\alpha^j}{\sum_{j=0}^{2}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.00649052194019 | 1 |
+| 1 | 0.423646282789217 | 0.306955955676234 |
+| 2 | 0.175406661440005 | 0.0328975279727171 |
+
+### 7.4 Formula 2: `Pade(2025)_2`
+
+$$ P_2(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{3}a_j\alpha^j}{\sum_{j=0}^{3}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 0.998980252114366 | 1 |
+| 1 | 0.0240176797055886 | -0.150350405960952 |
+| 2 | 0.102524886754552 | 0.112157962910113 |
+| 3 | 0.0317327085938995 | 0.00294483072586115 |
+
+### 7.5 Formula 3: `Pade(2025)_3`
+
+$$ P_3(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{4}a_j\alpha^j}{\sum_{j=0}^{4}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.00006668638419 | 1 |
+| 1 | 0.322645945302282 | 0.157166943736625 |
+| 2 | 0.0860384450810725 | 0.0245168267924732 |
+| 3 | 0.051143347041175 | 0.0462567432956417 |
+| 4 | 0.0153420957423937 | 0.00175392506101448 |
+
+### 7.6 Formula 4: `Pade(2025)_4`
+
+$$ P_4(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{5}a_j\alpha^j}{\sum_{j=0}^{5}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 0.999996682596798 | 1 |
+| 1 | -0.0889915717930786 | -0.255723982020183 |
+| 2 | 0.147076211695128 | 0.159493904911975 |
+| 3 | 0.0123471280480147 | -0.0106101311382749 |
+| 4 | 0.00866458140843225 | 0.00784491418150148 |
+| 5 | 0.00204463718201973 | 0.000184273251439305 |
+
+### 7.7 Formula 5: `Pade(2025)_5`
+
+$$ P_5(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{6}a_j\alpha^j}{\sum_{j=0}^{6}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 0.999998218345888 | 1 |
+| 1 | -0.424362176674708 | -0.591069429462395 |
+| 2 | 0.171875463304611 | 0.240083348894323 |
+| 3 | -0.0357487982640122 | -0.0617593442909405 |
+| 4 | 0.00410625374333464 | 0.0104920694265126 |
+| 5 | -0.000978753693904127 | -0.00231970889331938 |
+| 6 | -0.000636955605769902 | -5.65924775627923e-5 |
+
+### 7.8 Formula 6: `Pade(2025)_6`
+
+$$ P_6(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{7}a_j\alpha^j}{\sum_{j=0}^{7}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.0000000012405 | 1 |
+| 1 | -0.350251200743747 | -0.516917882097882 |
+| 2 | 0.229153326540668 | 0.284751410622371 |
+| 3 | -0.0205204312544928 | -0.0555622365621819 |
+| 4 | 0.0133231478358294 | 0.0161071584333013 |
+| 5 | 0.0010401274983046 | -0.000808341017586247 |
+| 6 | 0.00048671850792775 | 0.000381511960690599 |
+| 7 | 8.40088474488992e-5 | 6.40735447518177e-6 |
+
+### 7.9 Formula 7: `Pade(2025)_7`
+
+$$ P_7(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{8}a_j\alpha^j}{\sum_{j=0}^{8}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 0.999999995257458 | 1 |
+| 1 | -0.543811114837314 | -0.710477969437912 |
+| 2 | 0.297774393256421 | 0.385633880896532 |
+| 3 | -0.0648661921727468 | -0.110812474410256 |
+| 4 | 0.0174768559302056 | 0.0270500418196004 |
+| 5 | -0.00151793039097231 | -0.00394602590941703 |
+| 6 | 0.000295750461715408 | 0.000553921270262525 |
+| 7 | -4.1567697098083e-6 | -6.65533846723705e-5 |
+| 8 | -1.62498860684328e-5 | -1.24656671282763e-6 |
+
+### 7.10 Formula 8: `Pade(2025)_8`
+
+$$ P_8(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{9}a_j\alpha^j}{\sum_{j=0}^{9}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.00000000020126 | 1 |
+| 1 | -0.388439115555858 | -0.555105771884377 |
+| 2 | 0.310223332529737 | 0.372185262898829 |
+| 3 | -0.0496321949056331 | -0.0980736559689507 |
+| 4 | 0.0293825301580729 | 0.036689986163131 |
+| 5 | -0.000149900084396432 | -0.00440840853967443 |
+| 6 | 0.00139739652490532 | 0.00139722437126806 |
+| 7 | 0.000171592322622253 | -3.64106868131082e-6 |
+| 8 | 4.94349555930422e-5 | 2.72315576473091e-5 |
+| 9 | 5.36329658499187e-6 | 3.80576928768955e-7 |
+
+### 7.11 Formula 9: `Pade(2025)_9`
+
+$$ P_9(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{10}a_j\alpha^j}{\sum_{j=0}^{10}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.00000000054683 | 1 |
+| 1 | -0.302517970258141 | -0.469184609052338 |
+| 2 | 0.216194173804703 | 0.263835664763448 |
+| 3 | -0.00911867675112112 | -0.0421256860069538 |
+| 4 | 0.0131923444114312 | 0.0141905686336732 |
+| 5 | 0.00197230469011907 | 0.000171234247175628 |
+| 6 | 0.000583685774943952 | 0.000284037180073895 |
+| 7 | 0.000117061426950459 | 7.23728845968762e-5 |
+| 8 | 2.16577683514269e-5 | -3.33925175755566e-6 |
+| 9 | -4.06436904033371e-6 | -1.1196042731312e-6 |
+| 10 | -1.35655741732812e-7 | -6.10361897619335e-9 |
+
+### 7.12 Formula 10: `Pade(2025)_10`
+
+$$ P_10(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{11}a_j\alpha^j}{\sum_{j=0}^{11}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.00000000069543 | 1 |
+| 1 | -0.334954381847524 | -0.501621014271701 |
+| 2 | 0.229997336203832 | 0.283044819037831 |
+| 3 | -0.0170932674073579 | -0.0523102821262626 |
+| 4 | 0.0142286437913579 | 0.0164455383396673 |
+| 5 | 0.00157766182461221 | -0.000365622576684072 |
+| 6 | 0.000555414435408452 | 0.000304882740985283 |
+| 7 | 0.000109241385068583 | 7.15596032735346e-5 |
+| 8 | 2.04181414663277e-5 | -5.64260090297976e-6 |
+| 9 | -4.47936721320148e-6 | -7.22847827757772e-7 |
+| 10 | 7.20245847805242e-8 | 3.16954475149092e-8 |
+| 11 | 2.27591359161482e-9 | -4.18523172095159e-11 |
+
+### 7.13 Formula 11: `Pade(2025)_11`
+
+$$ P_11(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{12}a_j\alpha^j}{\sum_{j=0}^{12}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.00000000021134 | 1 |
+| 1 | -0.439538511010958 | -0.606205166733527 |
+| 2 | 0.262071966075091 | 0.332550449569891 |
+| 3 | -0.0352260757847662 | -0.0755002415059252 |
+| 4 | 0.0136888861362354 | 0.0186169006337531 |
+| 5 | 0.00119983590894612 | -0.000624409536143469 |
+| 6 | 0.000306132196963262 | 0.000110698204767146 |
+| 7 | 9.3344593984067e-5 | 7.31839474973857e-5 |
+| 8 | 1.13485236045952e-5 | -4.17221912299122e-6 |
+| 9 | -2.19033671564094e-6 | -1.00985652913037e-6 |
+| 10 | -1.52303393432862e-7 | 1.15600808535017e-7 |
+| 11 | 3.29680588537e-8 | -7.31093937337407e-9 |
+| 12 | -3.59648926971857e-9 | -3.576922099426e-10 |
+
+### 7.14 Formula 12: `Pade(2025)_12`
+
+$$ P_12(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{13}a_j\alpha^j}{\sum_{j=0}^{13}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.00000000034658 | 1 |
+| 1 | -0.35765423836608 | -0.524320887192481 |
+| 2 | 0.220474157851537 | 0.277305164506462 |
+| 3 | -0.0143101981637556 | -0.0478782214771677 |
+| 4 | 0.0106882664277003 | 0.0124223110237922 |
+| 5 | 0.00177809831685665 | 0.00037129622072912 |
+| 6 | 0.000425551341246499 | 0.000158246646088704 |
+| 7 | 8.39454668343144e-5 | 5.24876551697954e-5 |
+| 8 | 1.68918586510378e-5 | -1.38557325635002e-6 |
+| 9 | -3.47736023040874e-6 | -7.96232034767084e-7 |
+| 10 | 1.1564308170262e-7 | 8.35464703802028e-9 |
+| 11 | -5.38824115168048e-9 | 1.1834526426828e-8 |
+| 12 | 2.55400838802905e-9 | -1.48873774124982e-9 |
+| 13 | -5.77246087402385e-10 | -5.59846037648501e-11 |
+
+### 7.15 Formula 13: `Pade(2025)_13`
+
+$$ P_13(\alpha)=\sqrt{\alpha}\,\frac{\sum_{j=0}^{14}a_j\alpha^j}{\sum_{j=0}^{14}b_j\alpha^j} $$
+
+| $j$ | $a_j$ | $b_j$ |
+| ---: | ---: | ---: |
+| 0 | 1.00000000043044 | 1 |
+| 1 | -0.341214787680155 | -0.507881432557414 |
+| 2 | 0.216029315236116 | 0.27012036160695 |
+| 3 | -0.0116443516054976 | -0.0445169260696995 |
+| 4 | 0.0108812744435703 | 0.0122182321499095 |
+| 5 | 0.00184089184824533 | 0.00039913233839911 |
+| 6 | 0.000466873470691525 | 0.000190210573213751 |
+| 7 | 8.83178779786945e-5 | 5.3696821111172e-5 |
+| 8 | 1.82969284264395e-5 | -1.69377956737975e-6 |
+| 9 | -3.70984687913519e-6 | -7.45889615784955e-7 |
+| 10 | 1.15252770559743e-7 | 1.5632250659559e-9 |
+| 11 | 4.05866020101675e-10 | 1.19811786331838e-8 |
+| 12 | 1.00682972256747e-9 | -1.3440816876962e-9 |
+| 13 | -1.03386709606535e-10 | 1.13151579925971e-10 |
+| 14 | 2.54165346162395e-11 | 1.46210486272321e-12 |
+
+## 8. Comparative evaluation
+
+### 8.1 Sampling and error calculation
+
+The benchmark uses 10,000 equally spaced values, including the endpoints, on $0.0001\le\alpha\le2\pi$. Every method is evaluated on the same grid and compared against `kh_numeric`. The mean and maximum absolute relative errors are calculated in percent:
+
+$$ e_i=100\left|\frac{\beta_{a,i}-\beta_{r,i}}{\beta_{r,i}}\right| $$
+
+$$ \overline e=\frac{1}{N}\sum_{i=1}^{N}e_i,\qquad e_{\max}=\max_{1\le i\le N}e_i $$
+
+The input associated with the maximum is the first sampled input attaining it. Mean error depends on the sampling distribution; uniform sampling in $\alpha$ is not equivalent to uniform sampling in period, depth or logarithmic relative depth. A sampled maximum is not a proven supremum over a continuous interval.
+
+`compute_errors` assigns zero error if the reference value is zero. It cannot therefore establish the correctness of a method's zero-input limit. The default comparison avoids that issue by starting at 0.0001.
+
+### 8.2 Complete accuracy results
+
+The following results are calculated on the default grid using the implementation. Rows are sorted by mean error, then by maximum error, using unrounded values. Scientific notation is retained to distinguish very small errors from exact zero. The numerical reference has zero error against itself by definition.
+
+| Method | Mean error (%) | Maximum error (%) |
+| :--- | ---: | ---: |
+| kh_numeric | 0 | 0 |
+| Pade(2025)_11 | 8.766532e-10 | 2.102563e-08 |
+| Pade(2025)_8 | 1.119506e-09 | 2.002354e-08 |
+| Pade(2025)_12 | 1.275911e-09 | 3.44811e-08 |
+| Pade(2025)_13 | 1.457029e-09 | 4.282786e-08 |
+| Pade(2025)_9 | 2.144098e-09 | 5.440632e-08 |
+| Pade(2025)_10 | 2.299322e-09 | 6.920335e-08 |
+| Pade(2025)_7 | 2.611842e-08 | 7.486189e-06 |
+| Pade(2025)_6 | 3.786279e-08 | 1.535453e-07 |
+| Carvalho(2025)_1 | 3.050183e-07 | 4.234258e-06 |
+| Simarro&Orfila(2013) | 4.898401e-07 | 8.223883e-06 |
+| Pade(2025)_4 | 1.360187e-05 | 0.0003310862 |
+| Pade(2025)_5 | 1.862044e-05 | 0.006444387 |
+| Vatankhah(2013)_1 | 0.0004900532 | 0.001758975 |
+| Pade(2025)_3 | 0.0006188451 | 0.006656551 |
+| Carvalho(2025)_2 | 0.002832872 | 0.01672207 |
+| Hunt(1979)_9 | 0.003576223 | 0.008150303 |
+| Fenton&McKee(1990)_1 | 0.005598106 | 0.05111372 |
+| Pade(2025)_2 | 0.005928564 | 0.1018976 |
+| Wu&Thornton(1986) | 0.006984842 | 0.03427385 |
+| Vatankhah(2013)_2 | 0.008544918 | 0.01889016 |
+| Carvalho(2025)_3 | 0.009439052 | 0.04446302 |
+| Yamaguchi(2007)_10 | 0.009439052 | 0.04446302 |
+| Carvalho(2025)_4 | 0.009797759 | 0.05014884 |
+| Beji(2013) | 0.01641125 | 0.04422621 |
+| Carvalho(2025)_5 | 0.02935249 | 0.07602468 |
+| Carvalho(2025)_6 | 0.02960853 | 0.06541103 |
+| Carvalho(2025)_7 | 0.03089261 | 0.1351853 |
+| Hunt(1979)_5 | 0.03858343 | 0.07837798 |
+| Nielsen(1982) | 0.04512237 | 0.5804859 |
+| You(2002) | 0.04512237 | 0.5804859 |
+| Carvalho(2025)_8 | 0.06424006 | 0.1698012 |
+| Carvalho(2025)_9 | 0.06685411 | 0.2037817 |
+| Carvalho(2025)_10 | 0.07297119 | 0.271227 |
+| Carvalho(2025)_11 | 0.07425218 | 0.2609919 |
+| Yu(2014) | 0.08639421 | 0.3291155 |
+| Yamaguchi(2007)_9 | 0.08839415 | 0.3122414 |
+| Carvalho(2025)_12 | 0.08923112 | 0.4009798 |
+| Pade(2025)_1 | 0.1226442 | 0.6485218 |
+| Carvalho(2025)_13 | 0.1267865 | 0.3714239 |
+| Yamaguchi(2007)_2 | 0.1888776 | 0.7321854 |
+| Carvalho(2025)_14 | 0.2085362 | 1.278469 |
+| Gilbert(2000) | 0.2292764 | 0.7930431 |
+| Yamaguchi(2007)_8 | 0.2554179 | 1.109223 |
+| Guo(2002) | 0.2863639 | 0.7571934 |
+| Carvalho(2025)_15 | 0.2925759 | 1.311094 |
+| Carvalho(2025)_16 | 0.3101789 | 1.421656 |
+| Guan&Ju(2005) | 0.3393654 | 0.4970393 |
+| Carvalho(2025)_17 | 0.3571345 | 1.83103 |
+| Yamaguchi(2007)_7 | 0.3597263 | 1.031363 |
+| Carvalho(2025)_18 | 0.3724391 | 1.12898 |
+| Carvalho(2025)_19 | 0.4540868 | 1.389263 |
+| Carvalho(2025)_20 | 0.5191037 | 2.023581 |
+| Fenton&McKee(1990)_2 | 0.6716352 | 1.631425 |
+| Yamaguchi(2007)_1 | 0.7077884 | 1.542839 |
+| Yamaguchi(2007)_5 | 0.8704391 | 2.036158 |
+| Eckart(1951) | 1.192608 | 4.979783 |
+| Yamaguchi(2007)_6 | 1.210178 | 5.25878 |
+| Yamaguchi(2007)_3 | 1.488983 | 3.147347 |
+| Iwagaki(2007) | 1.488983 | 3.147347 |
+| Yamaguchi(2007)_4 | 1.587265 | 3.177284 |
+
+### 8.3 Location of maximum error
+
+For reproducibility, the following table gives the sampled input associated with each maximum. The reference row has no meaningful worst-case location because its error against itself is zero throughout the grid.
+
+| Method | Input at maximum error |
+| :--- | ---: |
+| Pade(2025)_11 | 0.0001000 |
+| Pade(2025)_8 | 0.0001000 |
+| Pade(2025)_12 | 0.0001000 |
+| Pade(2025)_13 | 0.0001000 |
+| Pade(2025)_9 | 0.0001000 |
+| Pade(2025)_10 | 0.0001000 |
+| Pade(2025)_7 | 5.3305743 |
+| Pade(2025)_6 | 0.7685982 |
+| Carvalho(2025)_1 | 0.3255964 |
+| Simarro&Orfila(2013) | 0.0359172 |
+| Pade(2025)_4 | 0.0001000 |
+| Pade(2025)_5 | 2.9490468 |
+| Vatankhah(2013)_1 | 0.9514543 |
+| Pade(2025)_3 | 0.0001000 |
+| Carvalho(2025)_2 | 1.2002893 |
+| Hunt(1979)_9 | 3.7891793 |
+| Fenton&McKee(1990)_1 | 0.4393316 |
+| Pade(2025)_2 | 0.0001000 |
+| Wu&Thornton(1986) | 0.7089029 |
+| Vatankhah(2013)_2 | 0.0704776 |
+| Carvalho(2025)_3 | 1.1273982 |
+| Yamaguchi(2007)_10 | 1.1273982 |
+| Carvalho(2025)_4 | 0.3463326 |
+| Beji(2013) | 0.2998331 |
+| Carvalho(2025)_5 | 1.5603461 |
+| Carvalho(2025)_6 | 0.5769449 |
+| Carvalho(2025)_7 | 1.3862872 |
+| Hunt(1979)_5 | 1.8098095 |
+| Nielsen(1982) | 1.9995777 |
+| You(2002) | 1.9995777 |
+| Carvalho(2025)_8 | 2.6549690 |
+| Carvalho(2025)_9 | 2.6568541 |
+| Carvalho(2025)_10 | 0.3940888 |
+| Carvalho(2025)_11 | 0.3871768 |
+| Yu(2014) | 0.0843018 |
+| Yamaguchi(2007)_9 | 1.6590004 |
+| Carvalho(2025)_12 | 0.9621366 |
+| Pade(2025)_1 | 0.0001000 |
+| Carvalho(2025)_13 | 0.0007284 |
+| Yamaguchi(2007)_2 | 0.1791858 |
+| Carvalho(2025)_14 | 0.2200300 |
+| Gilbert(2000) | 0.4858311 |
+| Yamaguchi(2007)_8 | 1.0287439 |
+| Guo(2002) | 1.7821612 |
+| Carvalho(2025)_15 | 0.1421119 |
+| Carvalho(2025)_16 | 0.1364566 |
+| Guan&Ju(2005) | 3.5937559 |
+| Carvalho(2025)_17 | 0.3281099 |
+| Yamaguchi(2007)_7 | 1.6847636 |
+| Carvalho(2025)_18 | 1.4912253 |
+| Carvalho(2025)_19 | 0.3067452 |
+| Carvalho(2025)_20 | 1.1160875 |
+| Fenton&McKee(1990)_2 | 0.3400489 |
+| Yamaguchi(2007)_1 | 1.9813549 |
+| Yamaguchi(2007)_5 | 1.8695048 |
+| Eckart(1951) | 0.6938220 |
+| Yamaguchi(2007)_6 | 0.7403215 |
+| Yamaguchi(2007)_3 | 1.8060393 |
+| Iwagaki(2007) | 1.8060393 |
+| Yamaguchi(2007)_4 | 0.4267642 |
+
+### 8.4 Interpreting the comparison
+
+The source's ordinary output uses seven decimal places for percentage errors. A displayed value of 0.0000000% can therefore represent a small nonzero value. In particular, the high-order fractional rational fits should not be described as numerically identical to the reference solely because of that formatting.
+
+Some registered methods duplicate one another algebraically. In this source, the Nielsen and You functions coincide, Iwagaki matches Yamaguchi formula 3, and Yamaguchi formula 10 matches Carvalho formula 3. Their inclusion preserves the source catalogue, but they are not independent algorithmic discoveries within this implementation.
+
+A fixed Newton correction can considerably reduce seed error without the cost of a full convergence loop. This explains the small errors of the Simarro–Orfila, Fenton–McKee corrected, and Carvalho formula 1 methods. Nevertheless, the accuracy remains dependent on the seed, input interval and floating-point evaluation.
+
+The fractional rational family provides very small sampled errors at high order, while formula 5 within that family illustrates that increasing degree need not improve maximum error monotonically. The expressions contain fitted coefficients, and denominator behaviour matters as much as degree.
+
+### 8.5 Timing method and reproducibility
+
+For each registered method, `main()` draws one random scalar input in the comparison interval, evaluates the function 1000 times, measures elapsed time using `time.perf_counter()`, and multiplies that elapsed time by 1000. Thus:
+
+$$ t_{1M}=1000\,t_{1000} $$
+
+`Time1M` is an extrapolated estimate of seconds per million calls. It is not the measured duration of a million-call run. Each method receives a separately drawn random input, and no random seed is set by the driver. The result is affected by input, Python version, machine load, processor and mathematical library.
+
+For a reproducible timing study, use a common input set, fixed random seed where relevant, repeated trials and a summary of trial variability. Record source revision, software versions and hardware. Algebraic operation counts alone cannot establish actual speed, and scalar Python measurements do not describe GPU throughput or native NumPy vectorization.
+
+### 8.6 Choosing an approximation
+
+Selection should begin with the physical model and the input domain, followed by an error requirement for the downstream calculation. Use the numerical reference to verify representative cases. A compact approximation may be adequate for exploratory work, while long propagation distances or sensitive derivative calculations may require a corrected method or iterative inversion.
+
+Carvalho formula 5 is convenient when a short direct wavelength expression is desired, but its full coefficients should be retained. The fractional rational formulas are appropriate for comparison within their documented interval; they should not be treated as globally valid deep-water substitutes. Piecewise methods require attention at branch boundaries. For all methods, distinguish approximation error from uncertainty in period, depth and the applicability of linear wave theory.
+
+## 9. Software installation and usage
+
+### 9.1 Files and dependencies
+
+Save the source under its repository filename, `wave-disp-equation.py`. Place any example scripts in the same directory.
+
+A working Python 3 installation, NumPy and Matplotlib are required. `math`, `time` and `importlib` belong to Python’s standard library. No minimum Python version or pinned dependency versions are declared in the implementation; use a supported Python 3 environment compatible with your NumPy and Matplotlib installation.
+
+### 9.2 Windows PowerShell
+
+Open PowerShell in the directory containing the source. These commands use the virtual environment directly, so activation is unnecessary:
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install numpy matplotlib
+.\.venv\Scripts\python.exe .\wave-disp-equation.py
+```
+
+### 9.3 Linux and macOS
+
+Open a terminal in the directory containing the source:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install numpy matplotlib
+.venv/bin/python wave-disp-equation.py
+```
+
+### 9.4 Run and interpret the benchmark
+
+Running the script evaluates all registered methods, prints the ranking, writes a text file, saves a PNG and then calls `plt.show()`. On an interactive graphical backend, the terminal may wait until the plot window is closed. Output files are written to the **current working directory**, and existing files with the same names are overwritten. The files are `wave-disp-equation_output.txt` and `wave-disp-equation_errors.png`.
+
+| Output | Contents |
+| :--- | :--- |
+| Text file | Errors and timing estimates |
+| PNG file | Mean errors, 300 dpi |
+| Terminal | Ranking and method errors |
+
+| Column | Interpretation |
+| :--- | :--- |
+| Rank | Order by mean error, then maximum error |
+| Method | Key in `ordered_approx` |
+| AvgErr | Mean absolute relative error, percent |
+| MaxErr | Largest sampled absolute relative error, percent |
+| k0h_MaxErr | First sample attaining the largest error |
+| Time1M | Estimated seconds per million scalar calls |
+
+The plot compares mean errors only. It does not show maximum errors, signed errors or timing. Errors printed as zero are rounded to the output precision. If error evaluation fails for a method, its row is marked `ERROR` and sorted after valid rows.
+
+### 9.5 Run without a graphical display
+
+Select the non-interactive Matplotlib backend before launching the script. The text and PNG files are still generated.
+
+Windows PowerShell:
+
+```powershell
+$env:MPLBACKEND = "Agg"
+.\.venv\Scripts\python.exe .\wave-disp-equation.py
+```
+
+Linux or macOS:
+
+```bash
+MPLBACKEND=Agg .venv/bin/python wave-disp-equation.py
+```
+
+### 9.6 Import the functions
+
+A hyphen is not valid in an ordinary Python module identifier. Load the file explicitly with `importlib` rather than writing an ordinary import statement using its filename. Save this example as `example.py` beside the source:
 
 ```python
-df = -math.tanh(kh) - kh / math.cosh(kh)**2
-``` 
+from pathlib import Path
+import importlib.util
+
+source = Path(__file__).with_name("wave-disp-equation.py")
+spec = importlib.util.spec_from_file_location("wave_disp", source)
+wave_disp = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(wave_disp)
+
+alpha = 0.4
+beta_ref = wave_disp.kh_numeric(alpha)
+beta_approx = wave_disp.carvalho2025(alpha, 5)
+print(f"Input k0h:   {alpha:.9f}")
+print(f"Reference kh: {beta_ref:.9f}")
+print(f"Carvalho 5:   {beta_approx:.9f}")
+```
+
+Importing does not execute the benchmark because the source protects `main()` with a main-module guard. NumPy and Matplotlib are nevertheless imported, so both dependencies remain required even when only one solver function is used.
+
+### 9.7 Dimensional worked example
+
+For a period of 9 s and a water depth of 5 m, use the still-water depth at the water level relevant to the calculation. Depth is positive and is not the seabed elevation relative to a datum.
+
+$$ \alpha=\frac{4\pi^2h}{gT^2},\qquad k=\frac{\beta}{h},\qquad L=\frac{2\pi h}{\beta} $$
+
+$$ L_0=\frac{gT^2}{2\pi},\qquad L_{a,5}=L_0\tanh\left(1.199315^{\alpha^{1.047086}}\alpha^{0.499947}\right) $$
+
+After loading `wave_disp` as above, append:
+
+```python
+import math
+
+g = 9.80665
+T = 9.0
+h = 5.0
+if T <= 0 or h <= 0:
+    raise ValueError("Period and water depth must be positive.")
 
-The iterative scheme advances by projecting the tangent line of the current guess to the zero intercept:
+omega = 2.0 * math.pi / T
+alpha = omega**2 * h / g
+beta = wave_disp.kh_numeric(alpha)
+beta5 = wave_disp.carvalho2025(alpha, 5)
+k = beta / h
+L = 2.0 * math.pi / k
+L5 = 2.0 * math.pi * h / beta5
+cp = omega / k
+cg = 0.5 * cp * (1.0 + 2.0 * beta / math.sinh(2.0 * beta))
+residual = beta * math.tanh(beta) - alpha
 
-$$\beta_{n+1} = \beta_n - \frac{f(\beta_n)}{f'(\beta_n)} = \beta_n - \frac{\alpha - \beta_n \tanh(\beta_n)}{-\tanh(\beta_n) - \beta_n \text{sech}^2(\beta_n)}$$ 
+for name, value in [
+    ("k0h", alpha), ("kh", beta), ("k (rad/m)", k),
+    ("L (m)", L), ("Carvalho 5 L (m)", L5),
+    ("Phase speed (m/s)", cp), ("Group speed (m/s)", cg),
+    ("Dimensionless residual", residual),
+]:
+    print(f"{name:25s} {value:.9g}")
+```
 
-The iteration loop rigorously evaluates the relative step size $|\Delta \beta / \beta_n|$. 
-When this fractional change drops below the strict tolerance parameter `tol=1e-15`, the loop terminates, having achieved double-precision floating-point exactness. A safety break is enforced via `max_iter=100` to prevent infinite looping in the event of pathological input data. 
+Expected values, rounded from the implementation:
 
-### Stability Topography and Carvalho's Seed: Evolutionary Optimization via GEP
+| Quantity | Value |
+| :--- | ---: |
+| Input k0h | 0.248498657 |
+| Numerical kh | 0.520107668 |
+| Wavenumber (rad/m) | 0.104021534 |
+| Numerical wavelength (m) | 60.402736704 |
+| Carvalho 5 wavelength (m) | 60.399342429 |
+| Phase speed (m/s) | 6.711415189 |
+| Group speed (m/s) | 6.174792735 |
 
-**The standard residual function $f(\beta) = \alpha - \beta \tanh(\beta)$ inherently possesses an inflection point at approximately $\beta \approx (6/5)$ (where $\alpha \approx 1.003$ or $h/L_0 \approx 0.159$) .** At an inflection point, the second derivative $f''(\beta) = 0$. 
-If an intermediate iteration step lands precisely near this topological feature, the tangent slope becomes momentarily flat, which violently throws the subsequent estimate $\beta_{n+1}$ far outside the physical domain, inducing numerical instability or total algorithmic divergence. 
-Historically, researchers like Goda advocated mutating the residual function to $f(\beta) = \beta - \alpha \coth(\beta)$ or $f(\beta) = \alpha/\beta - \tanh(\beta)$ to globally eliminate the inflection point. **However, the `wave-disp-equation.py` repository circumvents this geometrical hazard entirely by supplying an exceptionally sophisticated initial guess $\beta_0$, documented within the source code as the "Carvalho, 2006 style" seed.** 
+The two wavelength estimates differ because Carvalho(2025)_5 is an approximation. Keep its full coefficients when copying the expression; replacing them with three-decimal versions changes the fitted formula.
 
-**This specific formula was developed by R. Carvalho in 2006 using Gene Expression Programming (GEP), a high-performance evolutionary algorithm.** GEP differs from traditional genetic algorithms by using linear chromosomes (the genotype) that are expressed as branched expression trees (the phenotype), allowing the system to discover complex nonlinear algebraic relationships that human derivation might overlook. **Carvalho’s GEP-derived seed represents a breakthrough in performance engineering, achieving superior precision (0.27% maximum error) compared to traditional explicit bridges.**
+### 9.8 Function reference
 
-$$\Large \beta_0 = \frac{\alpha}{\tanh\left( \left(\frac{6}{5}\right)^\alpha \sqrt{\alpha} \right)}$$ 
+All solver inputs and outputs are dimensionless. `formula` is an integer selector, not a depth or a period.
 
-This specific seed algorithm is a masterclass in asymptotic matching. 
-**In the shallow limit ($\alpha \rightarrow 0$), the fractional exponential $(6/5)^0 \rightarrow 1$, leaving $\tanh(\sqrt{\alpha})$.** For small arguments, $\tanh(x) \approx x$, meaning the denominator resolves to $\sqrt{\alpha}$. 
-**The entire expression flawlessly reduces to $\beta_0 = \alpha / \sqrt{\alpha} = \sqrt{\alpha}$, precisely matching shallow water wave theory.** Conversely, in the deep-water limit ($\alpha \rightarrow \infty$), the argument of the hyperbolic tangent approaches infinity, forcing the denominator to exactly $1$, causing the expression to reduce to $\beta_0 = \alpha$, perfectly tracking the deep-water boundary. **The empirical constant $\frac{6}{5}$ (1.2) derived by GEP smoothly morphs the transition zone, ensuring the initial guess is so geometrically close to the true root that the Newton-Raphson method skips the inflection point entirely, typically converging to $10^{-15}$ precision within 3 iterations.**
+| Function or object | Use |
+| :--- | :--- |
+| `kh_numeric` | Newton reference |
+| `carvalho2025` | Selectors 1–20 |
+| `pade2025` | Selectors 1–13 |
+| `YamaguchiNonaka` | Selectors 1–10 |
+| `ordered_approx` | Named scalar callables |
+| `compute_errors` | Mean, maximum and location |
+| `main()` | Benchmark and file outputs |
 
----
+Family signatures are `carvalho2025(k0h, formula)`, `pade2025(k0h, formula)` and `YamaguchiNonaka(k0h, formula)`. The error helper is `compute_errors(func, k0h_vals)`. The numerical reference accepts `kh_numeric(k0h, tol=1e-15, max_iter=100)`.
 
-## Group I1: Classical and Contemporary Explicit Approximations (Full Domain) 
-**While the `kh_numeric` function provides flawless mathematical precision, the repetitive evaluation of expensive transcendental functions ($\tanh$, $\cosh$) inside a `while` loop is highly deleterious to the performance of large-scale, phase-resolving coastal models and global spectral grids, which evaluate the dispersion relation millions of times per temporal step.** To alleviate this computational burden, scientists have engineered explicit, non-iterative approximations. 
-The repository categorizes its explicit formulas into specific groups. Group I1 details analytical solutions valid across the entire physical domain ($0 < h/L_0 < \infty$). 
-These solutions vary in algebraic complexity and maximum relative error $\tilde{\epsilon}$. The formulas encoded within the repository framework are mathematically deconstructed below. 
+The remaining standalone solver names are:
 
-**1. The Eckart Solution (1951)** 
- Carl Eckart formulated the foundational explicit approximation by recognizing that multiplying the deep water linear limit by a hyperbolic tangent containing the shallow water limit generates a globally continuous curve:
+```text
+Simarro_2013
+vatankhah2013_1       vatankhah2013_2
+hunt1979_9           hunt1979_5
+fenton_mckee1990_1    fenton_mckee1990_2
+wu_thornton1986      beji2013
+nielsen1982          you2002
+yu2014               gilbert2000
+guo2002              guan2005
+iwagaki2007          eckart1951
+```
 
- $$k_a h = \alpha (\coth \alpha)^{1/2}$$ 
+Each of these takes one scalar `k0h` argument. Selectors outside the implemented family ranges return `-1`, which is an invalid sentinel rather than a physical result. Inputs are not comprehensively validated by the source.
 
- Equivalently expressed in terms of wavelength: 
+### 9.9 Calculate a sequence or a custom error grid
 
- $$L_a = L_0 (\tanh \alpha)^{1/2}$$ 
+The functions use scalar `math` operations; passing a NumPy array directly is generally unsupported. A list comprehension calls each scalar solver explicitly:
 
- This pioneering equation guarantees boundary compliance. However, its rigid geometrical structure lacks tunable degrees of freedom in intermediate depths. 
- Consequently, the approximation bows away from the exact solution, producing a maximum positive error of $+5.24\%$ centered precisely at $h/L_0 = 0.111$. While computationally lightweight, a 5% error fundamentally distorts wave celerity in the shoaling zone, making it unsuitable for modern quantitative analysis. 
+```python
+import numpy as np
 
-**2. The Iwagaki Solution** 
- To constrain the intermediate depth error, Iwagaki injected a corrective linear growth term into the hyperbolic argument:
+alpha_values = np.linspace(0.0001, 2.0 * np.pi, 10000)
+beta_values = np.array([
+    wave_disp.carvalho2025(float(a), 5) for a in alpha_values
+])
+mean_error, max_error, location = wave_disp.compute_errors(
+    lambda a: wave_disp.carvalho2025(float(a), 5),
+    alpha_values,
+)
+print(mean_error, max_error, location)
+```
 
- $$k_a h = \alpha \coth\left\{ \alpha^{1/2} \left( 1 + \frac{\alpha^{1/2}}{2\pi} \right) \right\}$$ 
+To change the grid for the full benchmark, edit the `k0h_vals` assignment inside `main()`. There are no built-in `--min`, `--max` or `--step` options. To change the included methods, edit `ordered_approx` or construct a separate subset in an importing script. Extending a numerical sweep beyond the default interval does not extend a fitted formula’s validated domain.
 
- The added internal degrees of freedom force the curve closer to the exact solution, producing an oscillatory error bound. 
- The error spans from a negative maximum of $-3.05\%$ at $h/L_0 = 0.287$ to a positive maximum of $+3.14\%$ at $h/L_0 = 0.023$. 
+### 9.10 Input limits and failure interpretation
 
-**3. Yamaguchi's 4th Solution (`Yamaguchi(2007)_4`)** Yamaguchi and Nonaka identified that eliminating transcendental functions entirely could vastly accelerate processing times on legacy hardware. This explicit solution operates solely on algebraic fractions and roots:
+Use finite, positive inputs for general comparisons. `kh_numeric(0)` returns zero, and several standalone routines also handle zero explicitly, but the Carvalho family does not provide a common zero-input guard. Negative depths, zero periods and non-finite values are not physical inputs to the dimensional example.
 
-$$k_a h = \alpha(1 + \alpha^{-2})^{1/4}$$ 
+At large positive input, intermediate exponentials, powers, `sinh` or `cosh` can overflow even when the underlying mathematical solution remains finite. Fractional rational expressions may also become poorly conditioned or approach denominator zeros outside their fitted interval. The source does not enforce the documented Padé interval.
 
-Despite bypassing hyperbolic geometry entirely, the formula manages to restrict the maximum relative error to 3.177% (occurring at $\alpha = 0.4268$).
+A `ModuleNotFoundError` for NumPy or Matplotlib usually means the script is being run with a different interpreter from the one used to install the packages. Use the same explicit virtual-environment Python path for installation and execution. A plot window remaining open is normal after `plt.show()`; use the non-interactive commands when only file outputs are required.
 
-**4. Fenton and MacKee (FM) Solution (1990)** 
- Fenton and MacKee revolutionized explicit modeling by generalizing Eckart's static $1/2$ exponent into a tunable parameter $1/m$:
+The driver catches error-evaluation and timing exceptions separately. A timing failure can leave a missing timing value that the later numeric formatting does not handle. Numerical routines also do not consistently reject NaN values. These limitations should be considered when integrating the functions into a larger calculation workflow.
 
- $$k_a h = \alpha (\coth \alpha^{m/2})^{1/m}$$ 
+## 10. Additional approximations for restricted regimes
 
- Through minimax error optimization, they deduced that setting $m = 1.5$ dramatically tightened the curve across the transitional depths. 
- The FM solution confines the relative error strictly between $-1.39\%$ (at $h/L_0 = 0.321$) and $+1.66\%$ (at $h/L_0 = 0.054$). 
+The expressions in this section are theoretical background presented alongside the implemented catalogue. They are not additional separately registered functions in the implementation. Where a similar branch appears in a registered method, the complete implemented definition and its switching condition are given in Section 4.
 
-**5. Yamaguchi and Nonaka Modifications (YN1 and YN2)** 
- Yamaguchi and Nonaka (2007) observed that the FM solution produced an asymmetrical error domain. 
- * **YN1 Solution:** By perturbing the exponent to $m = 1.485$, Yamaguchi and Nonaka perfectly balanced the positive and negative maximum errors, resulting in an error band strictly bounded by $\pm 1.55\%$. 
- * **YN2 Solution:** To achieve sub-1% accuracy, they proposed nesting the YN1 explicit estimate directly back into a rearranged form of the analytical dispersion relation. By calculating a temporary variable $\beta_F = \alpha(\coth \alpha^{m/2})^{1/m}$ with a customized parameter $m = 1.378$, the final wavenumber is extracted via:
- $$k_a h = \alpha \coth \beta_F$$ 
- This nested architecture simulates a single quasi-Newton corrective step, halving the maximum error to a symmetrical $\pm 0.73\%$. 
+### 10.1 Shallow-water polynomial approximations
 
-**6. The Guo Solution (2002)** 
- Jie Guo engineered a fundamentally different geometric approach, abandoning the hyperbolic cotangent in favor of a standard exponential decay function:
+A first empirical shallow-water expression attributed to Nielsen in the literature comparison is:
 
- $$k_a h = \frac{\alpha}{\{ 1 - \exp(-\alpha^{m/2}) \}^{1/m}}$$ 
+$$ \beta_{N1}=\sqrt{\alpha}\left(1+\frac{5\alpha}{8\pi}\right) $$
 
- Utilizing a highly optimized parameter $m = 2.4901$, Guo's formula produces an exact $\pm 0.75\%$ error bound. **The mathematical superiority of this formula lies in its computational velocity; the standard exponential function exp() is evaluated significantly faster by ALUs (Arithmetic Logic Units) than the hyperbolic functions tanh() or coth(), resulting in massive speedups in vectorized array processing.** 
+A second expression retains two powers inside the shallow-water correction:
 
-**7. Carvalho's 18th, 10th, and 9th Solutions** The module addresses a spectrum of formulas derived by Carvalho utilizing a variety of mathematical structures, ranging from simple dual-nested hyperbolic functions to exponential asymptotic geometries. 
-* **Carvalho(2025)_18:** $k_a h = \alpha \coth(\sinh \alpha^{1/2})$. By cleanly nesting a single hyperbolic sine inside a hyperbolic cotangent, this configuration yields a strictly negative error profile, bounding the maximum relative error to 1.129% (occurring at $\alpha = 1.4912$). 
-* **Carvalho(2025)_10:** $k_a h = \alpha \coth((6/5)^\alpha \cdot \alpha^{1/2})$. This formula provides excellent precision, with the maximum relative error constrained to 0.271% (occurring at $\alpha = 0.3941$). As previously discussed, this specific $1.2^\alpha$ (or $(6/5)^\alpha$) geometry leverages an exponential fractional base rather than deep nesting. It is precisely what powers the highly stable initial guess for the `kh_numeric` Newton solver. 
-* **Carvalho(2025)_9:**
-$$k_a h = \frac{\alpha}{(\tanh \alpha)^{1/4} [\tanh \{ (\sinh \alpha)^{1/2} \}]^{1/2}}$$
-Unlike the simpler configurations above, this specific formula aggressively triply nests hyperbolic functions alongside radical roots. This deep topological nesting suppresses the maximum relative error down to 0.204% (occurring at $\alpha = 2.6569$). However, the computational latency induced by evaluating three separate transcendental instructions renders this particular formula inefficient compared to fractional Padé alternatives.
+$$ \beta_{N2}=\sqrt{\alpha}\left(1+\frac{\alpha}{6}+\frac{11\alpha^2}{360}\right) $$
 
-**8. Carvalho's Evolutionary GEP Solutions (2025) and Yamaguchi Modifications** The module includes a vast array of explicit formulas derived via Gene Expression Programming (GEP) by Carvalho, alongside modifications detailed by Yamaguchi & Nonaka. By strictly analyzing the `wave-disp-equation.py` Python array outputs, the most notable mathematically distinct explicit formulas are deconstructed below:
+The Wu–Thornton shallow expression is:
 
-**The Deeply Nested Fraction (`Carvalho(2025)_4`):**
-  $$\Large k_a h = \frac{\alpha}{\tanh\left( \frac{\alpha}{\tanh\left( \frac{\alpha}{\tanh\left( \frac{\alpha}{\sinh(\tanh(\sqrt{\alpha}))} \right)} \right)} \right)}$$
-  **By deeply nesting hyperbolic functions in a recursive continuous fraction architecture, the maximum relative error is drastically suppressed down to an exceptional $0.050\%$ (occurring at $\alpha = 0.3463$)**. However, the extreme computational latency induced by evaluating six separate sequential transcendental instructions per grid point renders this specific formula mathematically inefficient when compared to modern fractional Padé alternatives.
+$$ \beta_{WT,s}=\sqrt{\alpha}\left[1+\frac{\alpha}{6}\left(1+\frac{\alpha}{5}\right)\right] $$
 
-**The Optimized Exponential (`Carvalho(2025)_5`):**
-  $$\Large k_a h = \frac{\alpha}{\tanh\left(1.199315^{\alpha^{1.047086}} \cdot \alpha^{0.499947}\right)}$$
-  **This GEP derived formula highly tuned by empirical coefficients provides exceptional precision, sharply bounding the maximum relative error to just $0.076\%$ (occurring at $\alpha = 1.5603$)**. It represents an extremely optimized evolution of the $(6/5)^\alpha$ seed geometry.
+These are local approximations rather than deep-water asymptotic formulas. The presence of the leading square root does not justify extrapolating the correction polynomial to arbitrarily large input.
 
-**The Triple Nested Root (`Carvalho(2025)_9`):** $$\Large k_a h = \frac{\alpha}{(\tanh \alpha)^{1/4} \sqrt{\tanh\left(\sqrt{\sinh \alpha}\right)}}$$
-  By triply nesting hyperbolic functions and radical roots, the curve is forced to tightly hug the exact transitional depths, restricting the maximum relative error to $0.204\%$ (occurring at $\alpha = 2.6569$). 
+### 10.2 Venezian rational expressions
 
-**The Asymptotic Seed (`Carvalho(2025)_10`):** $$\Large k_a h = \frac{\alpha}{\tanh\left( \left(\frac{6}{5}\right)^\alpha \sqrt{\alpha} \right)}$$
-  This is the masterful GEP asymptotic bridge that powers the highly stable initial guess for the `kh_numeric` Newton solver. **It seamlessly connects shallow and deep asymptotes, limiting the maximum relative error across all depths to $0.271\%$ (occurring at $\alpha = 0.3941$)**.
-
-* **The Hyperbolic Sine Root (`Carvalho(2025)_18`):** $$\Large k_a h = \frac{\alpha}{\tanh(\sinh \sqrt{\alpha})}$$
-  This configuration eliminates positive error overshoot, yielding a strictly negative error profile bounded by a maximum relative error of $1.129\%$ (occurring at $\alpha = 1.4912$).
-
-* **The Algebraic Solution (`Yamaguchi(2007)_4`):** $$\Large k_a h = \alpha(1 + \alpha^{-2})^{1/4}$$
-  This lightweight equation bypasses hyperbolic geometry entirely. **It operates strictly on algebraic fractions and roots, achieving a maximum relative error of $3.177\%$ (occurring at $\alpha = 0.4268$)**. It is ideal for legacy systems where hardware ALUs execute simple roots faster than transcendentals.
-
----
-
-### Formulas Maximum Errors Ranking Table
-
-| Model Name | Equation Format | MaxErr |
-| :--- | :--- | :--- |
-| Carvalho(2025)_4 | Deep continuous fraction | $0.050\%$ |
-| Carvalho(2025)_5 | $\alpha / \tanh(1.199^{\alpha^{1.047}} \alpha^{0.499})$ | $0.076\%$ |
-| Carvalho(2025)_9 | $\alpha / \{(\tanh \alpha)^{1/4} \sqrt{\tanh(\sqrt{\sinh \alpha})}\}$ | $0.204\%$ |
-| Carvalho(2025)_10 (Seed)| $\alpha / \tanh((6/5)^\alpha \alpha^{1/2})$ | $0.271\%$ |
-| Yamaguchi(2007)_2 (YN2) | Nested FM substitution $(m=1.378)$ | $0.732\%$ |
-| Guo(2002) | $\alpha / \{ 1 - \exp(-\alpha^{m/2}) \}^{1/m} \quad (m=2.4901)$ | $0.757\%$ |
-| Carvalho(2025)_18 | $\alpha / \tanh(\sinh \alpha^{1/2})$ | $1.129\%$ |
-| Yamaguchi(2007)_1 (YN1) | $\alpha(\coth \alpha^{m/2})^{1/m} \quad (m=1.485)$ | $1.543\%$ |
-| Fenton&McKee(1990)_2 | $\alpha / (\tanh \alpha^{3/4})^{2/3}$ | $1.631\%$ |
-| Iwagaki(2007) | $\alpha / \tanh\{\alpha^{1/2}(1 + \alpha^{1/2}/2\pi)\}$ | $3.147\%$ |
-| Yamaguchi(2007)_4 | $\alpha(1 + \alpha^{-2})^{1/4}$ | $3.177\%$ |
-| Eckart(1951) | $\alpha / (\tanh \alpha)^{1/2}$ | $4.980\%$ |
----
-
-## Group I2: High-Order Padé Approximants and Rational Functions 
-When resolving complex nearshore wave-current interactions or phase-resolving Boussinesq hydrodynamics, standard explicit bounds of $\sim 0.5\%$ introduce unacceptable phase errors over long temporal simulations. **To achieve arbitrary sub-0.1% precision without the algorithmic branching of Newton iterations, mathematicians deploy Padé approximants.** 
-A Padé approximant represents a given function as the ratio of two polynomials. 
-It generally outperforms Taylor series truncations because rational functions can seamlessly simulate poles, asymptotes, and nonlinear saturation geometries, making them the perfect analytical tool for modeling the hyperbolic tangent transition zone. 
-
-### The Hunt Solutions (1979) 
-J.N. Hunt published the definitive early application of Padé approximants for wave dispersion, expanding the squared dimensionless wavenumber $(k_ah)^2$ as a rational polynomial of $\alpha$. 
-
-* **Hunt's 5th Order Approximant (Hunt1):** 
- $$(k_a h)^2 = \alpha^2 + \frac{\alpha}{1 + 0.6522\alpha + 0.4622\alpha^2 + 0.0864\alpha^4 + 0.0675\alpha^5}$$ 
- Notice the deliberate mathematical omission of the cubic parameter ($\alpha^3$); this forces the polynomial to warp across the transitional intermediate depths smoothly, achieving an impressive error boundary between $-0.070\%$ and $+0.078\%$. 
-
-* **Hunt's 9th Order Approximant (Hunt2):** 
- To push precision to the extreme, Hunt formulated a 9th order denominator polynomial: 
- $$(k_a h)^2 = \alpha^2 + \frac{\alpha}{1 + \sum_{n=1}^9 d_n \alpha^n}$$ 
- Where the precisely tuned coefficients are: $d_1 = 0.66667$, $d_2 = 0.35550$, $d_3 = 0.16084$, $d_4 = 0.06320$, $d_5 = 0.02174$, $d_6 = 0.00654$, $d_7 = 0.00170$, $d_8 = 0.00039$, and $d_9 = 0.00010$. This expansion compresses the relative error to an exceptionally tight margin of $-0.0082\%$ to $+0.0054\%$. Despite the high degree, evaluating a 9th order polynomial using Horner's method requires only basic multiplication and addition, entirely eliminating CPU-intensive transcendental logic. 
-
-### Carvalho's 2025 Fractional Padé Approximations 
-The repository `wave-disp-equation.py` deploys state-of-the-art fractional Padé approximants within the `pade2025(k0h, formula)` function, mapping formulas 1 through 13. **Padé approximants are rational functions that approximate a given function by matching its Taylor series expansion up to a specified order**. **They use ratios of polynomials instead of solely polynomial expansions, offering vastly superior accuracy, particularly around singularities, asymptotes, and for functions exhibiting nonlinear saturation geometries like the hyperbolic tangent transition zone**.
-
-**Derived utilizing gene expression programming and analytical minimax optimization, Carvalho's novel mathematical insight was constructing the Padé polynomials utilizing half-integer powers ($\alpha^{0.5}, \alpha^{1.5}$) instead of standard integer powers**. 
-This fractional architecture natively embeds the $\sqrt{\alpha}$ shallow-water asymptote directly into the fundamental basis vectors of the polynomial. 
-This completely nullifies the necessity of squaring the left-hand side and computing an expensive square root at the end of the calculation, as required by the Hunt formulation. 
-The function defines the following specific high-accuracy fractional polynomials:
-
-* **Formula 1 (`Pade(2025)_1`):** $$k_a h = \frac{n_1 \alpha^{0.5} + n_2 \alpha^{1.5} + n_3 \alpha^{2.5}}{1 + d_1 \alpha^{1.0} + d_2 \alpha^{2.0}}$$ 
-  
-  Where the numerator coefficients are:
-  * $n_1 = 1.00649052194019$
-  * $n_2 = 0.423646282789217$
-  * $n_3 = 0.175406661440005$
-  
-  And the denominator coefficients are:
-  * $d_1 = 0.306955955676234$
-  * $d_2 = 0.0328975279727171$
-
-  As $\alpha \rightarrow 0$, the lowest-order terms dominate, collapsing the fraction to $1.006 \alpha^{0.5} / 1$, correctly modeling the shallow limit. As $\alpha \rightarrow \infty$, the highest-order terms dominate, balancing out to a linear $\alpha^{1.0}$ trajectory to flawlessly mirror the deep-water limit. **This fundamental configuration provides an excellent baseline, yielding a maximum relative error of just $0.6485218\%$ (occurring at $\alpha = 0.0001$)**.
-
-* **Formula 2 (`Pade(2025)_2`):** $$k_a h = \frac{n_1 \alpha^{0.5} + n_2 \alpha^{1.5} + n_3 \alpha^{2.5} + n_4 \alpha^{3.5}}{1 + d_1 \alpha^{1.0} + d_2 \alpha^{2.0} + d_3 \alpha^{3.0}}$$
-  
-  Where the numerator coefficients are:
-  * $n_1 = \phantom{-}0.998980252114366$
-  * $n_2 = \phantom{-}0.0240176797055886$
-  * $n_3 = \phantom{-}0.102524886754552$
-  * $n_4 = \phantom{-}0.0317327085938995$
-  
-  And the denominator coefficients are:
-  * $d_1 = -0.150350405960952$
-  * $d_2 = \phantom{-}0.112157962910113$
-  * $d_3 = \phantom{-}0.00294483072586115$
-  
-  The deliberate introduction of a negative linear coefficient ($-0.15035...\alpha^{1.0}$) in the denominator acts as a topological inflection constraint, forcing the polynomial curve to hug the transcendental $\tanh$ geometry with supreme accuracy throughout intermediate depth transitions. **This structural refinement dramatically constrains the maximum relative error down to a highly accurate $0.1018976\%$ (occurring at $\alpha = 0.0001$)**.
-
-* **Formula 3 (`Pade(2025)_3`):** $$k_a h = \frac{n_1 \alpha^{0.5} + n_2 \alpha^{1.5} + n_3 \alpha^{2.5} + n_4 \alpha^{3.5} + n_5 \alpha^{4.5}}{1 + d_1 \alpha^{1.0} + d_2 \alpha^{2.0} + d_3 \alpha^{3.0} + d_4 \alpha^{4.0}}$$
-  
-  Where the numerator coefficients are:
-  * $n_1 = 1.00006668638419$
-  * $n_2 = 0.322645945302282$
-  * $n_3 = 0.0860384450810725$
-  * $n_4 = 0.051143347041175$
-  * $n_5 = 0.0153420957423937$
-  
-  And the denominator coefficients are:
-  * $d_1 = 0.157166943736625$
-  * $d_2 = 0.0245168267924732$
-  * $d_3 = 0.0462567432956417$
-  * $d_4 = 0.00175392506101448$
-  
-  This expansion achieves phenomenal numerical stability. **By expanding the numerator to the 4.5-degree and the denominator to the 4.0-degree, this formulation pushes the precision even further, limiting the maximum relative error to an exceptional $0.0066566\%$ (occurring at $\alpha = 0.0001$)**. Because the mathematical operations rely exclusively on basic arithmetic and a single primitive square root, the `pade2025` function can be mapped directly onto highly parallelized tensor structures or GPU arrays without encountering the thread divergence issues caused by iterative conditional checking. Note that the programmatic array restricts `k0h` inputs to between $0$ and $2\pi$ to prevent unbounded polynomial resonance.
-
----
+The first background expression is:
 
-## Restricted Domain Approximations: Groups II and III 
-For specialized oceanographic models that process hydrodynamics exclusively in the far open ocean (deep water) or exclusively in the nearshore surf zone (shallow water), computing a global explicit formula carries unnecessary mathematical overhead. 
-Groups II and III encompass solutions defined strictly by localized Taylor and asymptotic series centered around $\alpha \rightarrow 0$ or $\alpha \rightarrow \infty$. 
+$$ \beta_{Ve1}=\frac{\sqrt{\alpha}}{1-\alpha/6} $$
 
-### Shallow Water Formulations ( $h/L_0 \rightarrow 0$ ) 
-These formulations leverage the Maclaurin series expansion of the fundamental transcendental equation, tailored for nearshore environments. 
-* **Nielsen's 1st Solution (Niell):** By taking the first-order correction, $k_a h = \alpha^{1/2} \{1 + (5/8\pi)\alpha\}$. This limits the error to $\pm 0.74\%$, but mathematically diverges if applied past the surf zone bound of $h/L_0 \le 0.192$. 
-* **Nielsen's 2nd Solution (Niel2):** Adding second-order terms extends the domain seaward: $k_a h = \alpha^{1/2} \{1 + (1/6)\alpha + (11/360)\alpha^2\}$. Error remains $\pm 0.44\%$ out to $h/L_0 \le 0.401$. 
-* **Venezian's 1st Solution (Venel):** Applies a simple rational denominator shift: $k_a h = \alpha^{1/2} / (1 - \alpha/6)$. Maintains a tight $\pm 0.048\%$ error constraint up to $h/L_0 \le 0.165$. 
-* **Wu and Thornton 1st Solution (WT1):** $k_a h = \alpha^{1/2} \{1 + \frac{\alpha}{6}(1 + \frac{\alpha}{5})\}$. Maintains precision out to $h/L_0 \le 0.219$. 
-* **Olson (1973) and You (2008):** Olson aggressively pushed the polynomial to the 7th order: $k_a h = \alpha^{1/2} \{1 - \frac{1}{3}\alpha + \frac{1}{45}\alpha^2 + \frac{1}{189}\alpha^3 + 0.000776\alpha^4 - 0.000044\alpha^5 - 0.000071\alpha^6 - 0.000022\alpha^7 \}^{-1/2}$. This drives the error down to a microscopic $\pm 0.00003\%$ within the shallow zone $h/L_0 \le 0.186$. 
-* **Venezian's 2nd Solution (Vene2):** Employs a specific, highly optimized nearshore Padé rational fraction:
- $$k_a h = \alpha^{1/2} \frac{1 - 0.428868\alpha + 0.093928\alpha^2 - 0.002694\alpha^3}{1 - 0.595534\alpha + 0.162628\alpha^2 - 0.014975\alpha^3}$$ 
- This yields extreme sub-surface accuracy ($-0.0002\%$ to $+0.000006\%$), but suffers catastrophic divergence if pushed past $h/L_0 > 0.159$. 
+It has an explicit denominator zero at $\alpha=6$, illustrating why an intended local approximation needs a domain restriction.
 
-### Deep Water Formulations ( $h/L_0 \rightarrow \infty$ ) 
-As depth increases towards infinity, $\tanh \beta \rightarrow 1$ following an asymptotic exponential decay trajectory proportional to $1 - 2e^{-2\beta} + \dots$. 
-* **Nielsen's 3rd Solution (Niel3):** $k_a h = \alpha \{1 + 2\exp(-2\alpha)\}$. This effectively models the deep-water limit, maintaining an error of $-0.55\%$ down to $h/L_0 \ge 0.300$, but diverges into immense errors in shallow water. 
-* **Wu and Thornton 2nd Solution (WT2):** Integrates nested exponentials to force the curve to hug the transitional depths slightly closer to shore: $k_a h = \alpha \{1 + 2t(1+t)\}$, utilizing the dynamic variable $t = \exp\{-2\alpha(1 + 1.26e^{-1.84\alpha})\}$. This restricts error to $\pm 0.025\%$ for conditions where $h/L_0 \ge 0.195$. 
+The second expression is:
 
-**Algorithmic Warning:** Modeling systems frequently attempt to merge a shallow formulation (like WT1) with a deep formulation (like WT2) via a piecewise conditional logic switch at a specific depth boundary (e.g., $h/L_0 = 0.2$). This piecewise architecture inevitably introduces a mathematical discontinuity (a discrete "jump" in phase speed mapping) at the transition point, causing severe non-physical wave scattering artifacts in refraction-diffraction grids. 
-Therefore, seamless full-domain approximations (Group I) or high-order Padé functions remain mathematically superior for generalized computing environments. 
+$$ \beta_{Ve2}=\sqrt{\alpha}\,\frac{N_V(\alpha)}{D_V(\alpha)} $$
 
----
+$$ N_V(\alpha)=1-0.428868\alpha+0.093928\alpha^2-0.002694\alpha^3 $$
 
-## Contemporary Optimization: The Seed-and-Step Paradigm 
-Recent theoretical advancements documented in the repository eschew the derivation of progressively complex polynomial expressions in favor of an elegant hybrid approach known as the "seed-and-step" method. 
+$$ D_V(\alpha)=1-0.595534\alpha+0.162628\alpha^2-0.014975\alpha^3 $$
 
-### The Beji Formulation (2013) 
-Serdar Beji established a highly accurate modification of Eckart's foundational equation. 
-By proving that Eckart's basic square-root geometry fundamentally lacked the degrees of freedom necessary to mimic intermediate depth transitions, Beji injected a sophisticated empirical exponential correction function:
+### 10.3 Higher-order shallow expansion
 
-$$k_a h = \alpha \exp(-\beta_0 + \beta_1\alpha + \beta_2\alpha^2)$$ 
+The Olson/You expression quoted in the literature comparison has the form:
 
-Through rigorous least-squares curve fitting across the operational domain, Beji determined the optimum constants to constrain the absolute maximum relative error to $0.044\%$ across all physical depths. 
+$$ \beta_O=\sqrt{\alpha}\,[P_O(\alpha)]^{-1/2},\qquad P_O(\alpha)=\sum_{j=0}^{7}p_j\alpha^j $$
 
-### Vatankhah and Aghashariatmadari Refinement (2013) 
-Almost immediately following Beji's publication, researchers Vatankhah and Aghashariatmadari applied advanced geometric curve-fitting algorithms directly to Beji’s core exponential expression. **By optimizing the exponent constants, they drove the maximum absolute error down to $0.019\%$ without imposing any additional computational latency upon the host hardware**. To accommodate varying precision requirements, they proposed two distinct single-step explicit formulas:
+Its complete coefficients are:
 
-* **Single-Step Explicit Formula #1:**
- This formulation directly refines Beji's exponent terms to smoothly approximate the intermediate depth transition.
+| $j$ | $p_j$ |
+| ---: | ---: |
+| 0 | 1 |
+| 1 | $-1/3$ |
+| 2 | $1/45$ |
+| 3 | $1/189$ |
+| 4 | 0.000776 |
+| 5 | -0.000044 |
+| 6 | -0.000071 |
+| 7 | -0.000022 |
 
- $$\Large k_a h \approx \frac{\alpha + \alpha^2 \exp(-1.835 - 1.225\alpha^{1.35})}{\sqrt{\tanh(\alpha)}}$$
+### 10.4 Deep-water exponential expansions
 
- **This streamlined geometric equation strictly bounds the maximum relative error to $0.0189\%$ (occurring at $\alpha = 0.0705$)**.
+A leading correction attributed to Nielsen is:
 
-* **Single-Step Explicit Formula #2:**
- For scenarios demanding even tighter topological constraints, they split the approximation into a two-part expansion, introducing a sophisticated, high-order exponential corrective growth term:
+$$ \beta_{N,d}=\alpha[1+2\exp(-2\alpha)] $$
 
- $$\Large k_a h \approx \frac{\alpha + \alpha^2 \exp(-(3.2 + \alpha^{1.65}))}{\sqrt{\tanh(\alpha)}} + \alpha \left[1 - \exp(-\alpha^{0.132})\right]^{(5.0532 + 2.1584\alpha^{1.505})}$$
+The Wu–Thornton background expression is:
 
- **This advanced split-form configuration aggressively suppresses the maximum relative error down to an exceptional $0.00176\%$ (occurring at $\alpha = 0.9515$), yielding near-exact precision while remaining fully explicit and avoiding iterative branching**.
+$$ q=\exp\{-2\alpha[1+1.26\exp(-1.84\alpha)]\} $$
 
-### Simarro and Orfila's Single-Step Method (2013) 
-The pinnacle of contemporary optimization was realized by Simarro and Orfila. They postulated that pursuing mathematically convoluted explicit analytical formulas (such as Carvalho's triple-nested hyperbolic roots or Hunt's massive 9th-order fractions) to achieve near-exact accuracy was fundamentally inefficient. 
-**Instead, they utilized Beji's robust $0.044\%$ accurate explicit formulation not as a final solution, but exclusively as the $\beta_0$ initial seed for exactly one fixed Newton-Raphson iteration.** 
-Because the Beji approximation places the algorithmic state extraordinarily close to the true root, taking exactly one Newton step yields: 
+$$ \beta_{WT,d}=\alpha[1+2q(1+q)] $$
 
-$$\beta_{\text{final}} = \beta_{\text{Beji}} - \frac{\alpha - \beta_{\text{Beji}} \tanh(\beta_{\text{Beji}})}{-\tanh(\beta_{\text{Beji}}) - \beta_{\text{Beji}} \text{sech}^2(\beta_{\text{Beji}})}$$ 
+The latter is algebraically the deep branch of the implemented Wu–Thornton function. These exponential corrections become appropriate as the hyperbolic tangent approaches its deep-water limit; they are not accurate shallow-water expansions.
 
-**This singular mathematical maneuver plunges the relative error down to an astonishing $0.0000082\%$.** Further refinement utilizing the Vatankhah modified seed pushed this precision to $0.00000028\%$. This hybrid "seed-and-step" topology represents a computational Holy Grail: it provides double-precision analytical exactness while entirely circumventing the need for while loops, conditional convergence thresholds, and algorithmic branching logic. This makes the logic exceptionally efficient when executing highly vectorized wave forecasting models operating on massively parallel GPU (CUDA/OpenCL) architectures where warp divergence imposes severe computational penalties. 
+### 10.5 Historical ranges quoted in the literature comparison
 
----
+The following limits and signed error summaries describe the restricted-domain literature comparison. They have not been independently reproduced as part of the registered-method benchmark. The variable in these ranges is $h/L_0=\alpha/(2\pi)$, not $h/L$.
 
-## Physical Extensions to the Dispersion Framework 
-The standard Airy dispersion relation simulated in `wave-disp-equation.py` ($\omega^2 = gk \tanh(kh)$) defines the fundamental kinematic matrix. 
-However, highly complex ocean waves phenomena force crucial theoretical extensions to this core relationship, which modelers must integrate. 
+| Background formula | Quoted range |
+| :--- | :--- |
+| Nielsen 1 | $h/L_0\le0.192$ |
+| Nielsen 2 | $h/L_0\le0.401$ |
+| Venezian 1 | $h/L_0\le0.165$ |
+| Wu–Thornton shallow | $h/L_0\le0.219$ |
+| Olson/You | $h/L_0\le0.186$ |
+| Venezian 2 | $h/L_0\le0.159$ |
+| Nielsen deep | $h/L_0\ge0.300$ |
+| Wu–Thornton deep | $h/L_0\ge0.195$ |
 
-### 1. Wave-Current Interaction and Doppler Shifting 
-When wave trains propagate across an underlying mean fluid current characterized by a depth-averaged velocity vector $\mathbf{V}$, the dispersion relation must undergo a Galilean transformation, resulting in a hydrodynamic Doppler shift. The absolute frequency observed from a stationary geographic reference frame ($\omega$) separates from the intrinsic relative frequency ($\sigma$) observed in a frame moving alongside the fluid. 
-The generalized dispersion relation becomes:
+| Background formula | Quoted error (%) |
+| :--- | :--- |
+| Nielsen 1 | ±0.74 |
+| Nielsen 2 | ±0.44 |
+| Venezian 1 | ±0.048 |
+| Olson/You | ±0.00003 |
+| Venezian 2 | -0.0002 to +0.000006 |
+| Nielsen deep | -0.55 |
+| Wu–Thornton deep | ±0.025 |
 
-$$(\omega - \mathbf{k} \cdot \mathbf{V})^2 = g k \tanh(kh) \quad \implies \quad \sigma^2 = g k \tanh(kh)$$ 
+Consult the original publications before applying these historical bounds. The software neither validates these ranges nor exposes all of these expressions as callable methods.
 
-Where $\mathbf{k}$ is the spatial wavenumber vector. If the fluid current flows directly opposite to the wave propagation vector ($\mathbf{k} \cdot \mathbf{V} < 0$), the waves compress, steepen, and accumulate massive kinetic energy. 
-If the adverse current velocity is sufficiently strong, total wave blocking occurs, physically preventing forward energy propagation. Models resolving wave-current interaction rely continuously on the rapid explicit algorithms documented above to resolve the intrinsic spatial parameters. 
+## 11. Extensions of the physical model
 
-### 2. Capillary Waves and Surface Tension Effects 
-At microscopic spatial domains (specifically wavelengths $\lambda < 0.07$ meters), the hydrostatic restoring force of gravity is matched and eventually superseded by the cohesive fluid surface tension ($\gamma$ or $\sigma_t$). To accommodate this force, the gravity-capillary dispersion relation introduces a cubic wavenumber parameter:
+### 11.1 Waves on a uniform current
 
-$$\omega^2 = \left(gk + \frac{\gamma}{\rho} k^3\right) \tanh(kh)$$ 
+For a uniform current vector $\mathbf{V}$, the intrinsic frequency is the frequency measured in a frame moving with the fluid:
 
-Where $\rho$ defines the fluid density. Capillary waves exhibit inverted frequency dispersion physics: unlike gravity waves where longer waves traverse faster, capillary waves propagate faster as their wavelength becomes shorter. The presence of the $k^3$ parameter invalidates standard polynomial approximations, necessitating specific Padé expansions or dedicated root-finding mechanisms for microwave remote sensing and wind-wave generation models. 
+$$ \sigma=\omega-\mathbf{k}\cdot\mathbf{V} $$
 
-### 3. Amplitude Dispersion and Stokes Non-Linearity 
-The Airy wave framework is strictly a first-order linearized analytical solution, fundamentally assuming that wave steepness ($ak$) is infinitesimally small. Under real oceanic conditions, as waves steepen (e.g., hurricane-forced chaotic sea states), the nonlinear convective acceleration terms within the Navier-Stokes equations physically alter the wave's phase celerity. Applying Stokes' perturbation expansion theory to the third order in deep water modifies the governing relation to:
+The linear relation is then:
 
-$\omega^2 = gk [1 + (ka)^2]$
+$$ (\omega-\mathbf{k}\cdot\mathbf{V})^2=gk\tanh(kh) $$
 
-This equation establishes the phenomenon of "amplitude dispersion." It mathematically proves that large-amplitude crests propagate tangibly faster than small-amplitude waves sharing the identical frequency. **This $(ka)^2$ phase dependency fundamentally governs nonlinear wave-wave interaction physics, directly precipitating the Benjamin-Feir modulational instability, which drives the spontaneous generation of extreme rogue (freak) waves in the open ocean.** 
+$$ \sigma^2=gk\tanh(kh) $$
 
-### 4. Interfacial and Internal Wave Dispersion 
-When evaluating stratified, multi-layered fluid bodies (such as a buoyant freshwater estuarine plume sliding over dense saline oceanic water), internal waves propagate silently along the subsurface pycnocline. 
-For two semi-infinite homogeneous layers with lower density $\rho$ and upper density $\rho'$, the deep-water dispersion relation transitions into an internal density gradient expression:
+When absolute frequency and current are prescribed, the intrinsic frequency depends on the unknown wavenumber. The no-current inversion cannot simply be used once with the absolute period. Opposing currents can reduce absolute group propagation and can cause wave blocking; rotational or vertically sheared currents require additional analysis.
 
-$$\omega^2 = gk \left( \frac{\rho - \rho'}{\rho + \rho'} \right)$$ 
+### 11.2 Gravity-capillary waves
 
-Because the physical density variation across the interface is extremely small (fractional percentages), the effective restoring force (reduced gravity) is weak. Consequently, internal waves propagate at a fraction of the speed of surface waves but can attain colossal vertical amplitudes spanning hundreds of meters. 
+For surface tension $\gamma$, the restoring force includes a cubic wavenumber term:
 
----
+$$ \omega^2=\left(gk+\frac{\gamma}{\rho}k^3\right)\tanh(kh) $$
 
-## Synthesis of Approximations and Model Accuracy
+The relative importance of capillarity depends on density, gravity, surface tension and wavelength. The gravity-only formulas in Sections 3–7 do not invert this relation.
 
-The extraction of the wavenumber from the dispersion equation is not merely an exercise in theoretical math; the value of $k$ completely dictates the calculation of second-order momentum flux, the radiation stress tensor, wave energy density ($E = \frac{1}{2}\rho g a^2$), and the shoaling and refraction coefficients that define all nearshore morphological evolution models.
+### 11.3 Finite-amplitude dispersion
 
-To understand the immense physical weight of this mathematical inversion, one must recognize that **every kinematic and dynamic property of a surface gravity wave is fundamentally downstream of the wavenumber $k$**. Once $k$ is extracted, it immediately defines the phase velocity ($c_p$), which governs wave refraction over varying bathymetry:
+In deep water, a leading Stokes amplitude correction can be written as:
 
-$$\Large c_p = \frac{\omega}{k} = \frac{g}{\omega} \tanh(kh)$$
+$$ \omega^2\approx gk[1+(ka)^2] $$
 
-Furthermore, $k$ dictates the group celerity ($c_g$), which represents the actual velocity at which wave energy propagates across the ocean surface:
+Unlike the linear relation, it depends on wave amplitude. At fixed wavenumber, the leading correction increases phase speed as amplitude grows. Finite-depth nonlinear waves require an appropriate nonlinear theory; this single deep-water expression is not a general substitute. Modulational instability also requires a wave-interaction analysis beyond the dispersion correction itself.
 
-$$\Large c_g = \frac{\partial \omega}{\partial k} = \frac{1}{2} c_p \left[ 1 + \frac{2kh}{\sinh(2kh)} \right]$$
+### 11.4 Interfacial waves
 
-**Any fractional error introduced during the numerical estimation of $k$ will exponentially propagate through these secondary derivatives, fundamentally corrupting wave height predictions, energy flux balances, and sediment transport gradients in coastal models**. 
+For two semi-infinite, homogeneous fluid layers with lower density $\rho$ greater than upper density $\rho'$, the deep-water interfacial relation is:
 
-The extensive algorithmic landscape detailed within `wave-disp-equation.py`—from Eckart's elementary 1951 asymptotic bridge to the highly refined 2025 half-integer fractional Padé approximants by Carvalho—illustrates an evolutionary continuum of mathematical performance engineering. This evolution mirrors the historical progression of computational hardware: from the slide rules of the 1950s requiring simple algebraic bridges, to the single-core microprocessors of the 1990s optimizing minimax polynomials, and ultimately to the massively parallel Tensor and GPU architectures of the 2020s demanding strictly divergence-free, non-iterative logic.
+$$ \omega^2=gk\frac{\rho-\rho'}{\rho+\rho'} $$
 
-By benchmarking these algorithms against a strict Newton-Raphson baseline, several distinct operational paradigms emerge for the modern oceanographer:
-
-* **For pedagogical clarity or rapid generalized analysis, the purely algebraic Guo or Carv14 explicit formulations provide excellent computational velocity with minimal coding complexity**.
- * **The Guo (2002) formula** relies entirely on standard exponential decay, evaluating millions of arrays in mere fractions of a second (approx. 0.73 seconds per million operations) while globally constraining its error to a remarkably symmetrical $\pm 0.75\%$.
-* **YN4 Solution** mathematically bypasses transcendentals (like `tanh` or `exp`) entirely, operating strictly on algebraic fractions and roots to achieve a maximum relative error of 3.177%. **These are ideal for legacy systems, lightweight embedded wave buoys, or rapid prototyping where hardware ALUs execute simple roots faster than complex hyperbolic geometry**.
-
-* **For heavily constrained processing environments where iterative divergence poses a catastrophic failure risk, the Yamaguchi & Nonaka modifications or the robust Hunt Padé arrays guarantee strict topological bounds without requiring conditional looping logic**.
- * In massively parallel GPU computing (CUDA/OpenCL), traditional iterative `while` loops cause severe "warp divergence"—where some threads finish early while others stall, bottlenecking the entire array. 
- * **Hunt's 9th Order Approximant (Hunt2)** circumvents this by utilizing a massive 9th-degree polynomial ratio. Executed via Horner's method, it compresses maximum error to an exceptionally tight margin of just $0.00815\%$, utilizing only primitive multiplication and addition.
- * Similarly, the **Carvalho (2025) Fractional Padé Approximants** completely rewrite the underlying polynomial basis vectors using half-integer powers (e.g., $\alpha^{0.5}, \alpha^{1.5}$). **Formulas like Pade(2025)_8 and Pade(2025)_11 push the maximum relative error to absolute $0.0000000\%$ (matching double-precision numeric exactness) without a single conditional check, offering a true 1:1 replacement for iterative solvers on tensor cores**.
-
-* **For modern, state-of-the-art predictive ocean waves modeling requiring supreme accuracy, the hybridization of an empirically exact seed (such as the Beji equation or the Carvalho initial guess) inextricably linked to a deterministic, single-step Newton-Raphson update yields sub-machine-epsilon accuracy ($< 10^{-7}\%$), entirely eradicating wavenumber-induced phase lag over multi-decadal simulation timelines**.
- * **This paradigm perfectly leverages Carvalho's 2006 Gene Expression Programming (GEP) derived seed, which elegantly maps the asymptotic limits to provide a geometrically perfect starting position**:
-
- $$\Large \beta_0 = \frac{\alpha}{\tanh\left( \left(\frac{6}{5}\right)^\alpha \sqrt{\alpha} \right)}$$
-
- * This is the computational "Holy Grail" realized by Simarro and Orfila (2013). By evaluating highly accurate explicit formulations not as an endpoint, but exclusively as a pre-calculated starting position ($\beta_{\text{seed}}$), they place the algorithm so close to the true root that exactly *one* rigid Newton step drops the error down to an astonishing $0.0000082\%$. 
-
- $$\Large \beta_{\text{final}} = \beta_{\text{seed}} - \frac{\alpha - \beta_{\text{seed}} \tanh(\beta_{\text{seed}})}{-\tanh(\beta_{\text{seed}}) - \beta_{\text{seed}} \text{sech}^2(\beta_{\text{seed}})}$$
-
- * **Because ocean wave models (like SWAN, WaveWatch III, or Boussinesq phase-resolving grids) integrate phase celerity over millions of time-steps, even a $0.1\%$ error in $k$ accumulates into massive, non-physical phase shifts, completely destroying wave interference patterns and refraction corridors**. This hybrid "seed-and-step" topology guarantees analytical exactness while retaining the vectorized speed necessary for global forecasting.
-
-Through this suite of algorithms, hydrodynamical researchers are comprehensively equipped to balance processing execution latency against the uncompromising demands of numerical precision, ensuring robust wave phase and group celerity integration across every conceivable spectral forecasting environment. **Whether modeling short-crested capillary chop in a coastal flume or resolving deep-ocean rogue wave non-linearities, the `wave-disp-equation.py` repository provides the exact mathematical key to unlocking the dispersion relation**.
-
----
-
-## Most Relevant Formulas Ranked
-
-| Model Name | Equation Format | MaxErr |
-| :--- | :--- | :--- |
-| Pade(2025)_8 | High-order fractional Padé polynomial | $0.0000000\%$ |
-| Pade(2025)_11 | High-order fractional Padé polynomial | $0.0000000\%$ |
-| Simarro&Orfila(2013) | $\beta_{\text{Beji}} - f(\beta_{\text{Beji}})/f'(\beta_{\text{Beji}})$ | $0.0000082\%$ |
-| Vatankhah(2013)_1 | Split-form exponential corrective growth | $0.00176\%$ |
-| Pade(2025)_3 | $N_{4.5}(\alpha) / D_{4.0}(\alpha)$ | $0.00666\%$ |
-| Hunt(1979)_9 | $[\alpha^2 + \alpha / (1 + \sum_{n=1}^9 d_n \alpha^n)]^{1/2}$ | $0.00815\%$ |
-| Vatankhah(2013)_2 | $[\alpha + \alpha^2 \exp(-1.835 - 1.225\alpha^{1.35})] / \sqrt{\tanh(\alpha)}$ | $0.01889\%$ |
-| Wu&Thornton(1986) | Piecewise shallow/deep bounds | $0.03427\%$ |
-| Beji(2013) | $\alpha \exp(-\beta_0 + \beta_1\alpha + \beta_2\alpha^2)$ | $0.04423\%$ |
-| Carvalho(2025)_4 | Deep continuous fraction | $0.050\%$ |
-| Carvalho(2025)_5 | $\alpha / \tanh(1.199^{\alpha^{1.047}} \alpha^{0.499})$ | $0.076\%$ |
-| Hunt(1979)_5 | $[\alpha^2 + \alpha / (1 + 0.652\alpha + \dots + 0.067\alpha^5)]^{1/2}$ | $0.078\%$ |
-| Pade(2025)_2 | $N_{3.5}(\alpha) / D_{3.0}(\alpha)$ | $0.102\%$ |
-| Carvalho(2025)_9 | $\alpha / \{(\tanh \alpha)^{1/4} \sqrt{\tanh(\sqrt{\sinh \alpha})}\}$ | $0.204\%$ |
-| Carvalho(2025)_10 (Seed)| $\alpha / \tanh((6/5)^\alpha \alpha^{1/2})$ | $0.271\%$ |
-| Nielsen(1982) | Piecewise Taylor series / exponential | $0.580\%$ |
-| You(2002) | Piecewise Taylor series / exponential | $0.580\%$ |
-| Pade(2025)_1 | $N_{2.5}(\alpha) / D_{2.0}(\alpha)$ | $0.649\%$ |
-| Yamaguchi(2007)_2 (YN2) | Nested FM substitution $(m=1.378)$ | $0.732\%$ |
-| Guo(2002) | $\alpha / \{ 1 - \exp(-\alpha^{m/2}) \}^{1/m} \quad (m=2.4901)$ | $0.757\%$ |
-| Carvalho(2025)_18 | $\alpha / \tanh(\sinh \alpha^{1/2})$ | $1.129\%$ |
-| Yamaguchi(2007)_1 (YN1) | $\alpha(\coth \alpha^{m/2})^{1/m} \quad (m=1.485)$ | $1.543\%$ |
-| Fenton&McKee(1990)_2 | $\alpha / (\tanh \alpha^{3/4})^{2/3}$ | $1.631\%$ |
-| Iwagaki(2007) | $\alpha / \tanh\{\alpha^{1/2}(1 + \alpha^{1/2}/2\pi)\}$ | $3.147\%$ |
-| Yamaguchi(2007)_4 | $\alpha(1 + \alpha^{-2})^{1/4}$ | $3.177\%$ |
-| Eckart(1951) | $\alpha / (\tanh \alpha)^{1/2}$ | $4.980\%$ |
-
----
-
-## Glossary of Variables, Parameters, and Terms 
-
-This glossary lists physical variables, mathematical parameters, algorithmic concepts, and theoretical terms used in this document.
-
-## I. Fundamental Physical & Spatial Variables
-
-* **$x$**: The primary horizontal spatial coordinate. It defines the geographic direction of progressive wave propagation across the fluid domain.
-* **$z$**: The vertical spatial coordinate. It is constrained by the flat impermeable seabed at the bottom and the moving fluid free-surface at the top, with the origin ($z = 0$) strictly locked to the mean water level.
-* **$t$**: The temporal parameter (time). It is essential for evaluating the unsteady, transient kinematics of surface gravity waves and computing angular frequencies.
-* **$h$**: The bathymetric water depth. It represents the absolute vertical distance from the mean water level ($z = 0$) to the solid seabed ($z = -h$). It is typically acquired via physical hydrographic surveys and dictates the precise depth-regime of the wave.
-* **$\eta(x,t)$**: The free-surface elevation. It represents the instantaneous vertical displacement of the fluid boundary. For a monochromatic harmonic wave, it is defined mathematically as $\eta(x,t) = a \cos(kx - \omega t)$.
-* **$a$**: The wave amplitude. It defines the maximum vertical elevation of the wave crest above the mean water level. Under linear Airy theory, it is assumed to be infinitesimally small compared to the wavelength and depth.
-* **$T$**: The wave period. It measures the time required for one complete wave cycle to pass a stationary reference point. It is typically empirical, gathered via offshore wave buoys or global spectral wind-wave models.
-* **$\lambda$ (or $L$)**: The physical wavelength. It is the spatial distance between two consecutive wave crests. 
-* **$L_0$**: The deep-water wavelength. Defined exclusively by the wave period and gravity as $L_0 = gT^2/2\pi$, representing the unshoaled length of a wave in the open ocean.
-* **$g$**: The constant of gravitational acceleration. It acts as the primary downward hydrostatic restoring force that propagates surface gravity waves.
-* **$\rho$**: The primary fluid density (typically seawater). It is assumed to be constant under the Navier-Stokes incompressibility constraint.
-* **$\rho'$**: The density of a secondary, usually lighter, fluid layer (e.g., a buoyant freshwater estuarine plume). The density gradient between $\rho$ and $\rho'$ drives the propagation of internal interfacial waves.
-* **$\gamma$ (or $\sigma_t$)**: Fluid surface tension. A cohesive microscopic force that supersedes gravity at wavelengths shorter than 0.07 meters, altering the dispersion relation for capillary waves.
-
-## II. Derived Kinematic & Hydrodynamic Variables
-
-* **$\Phi(x, z, t)$**: The scalar velocity potential. Enabled by the assumption of irrotational flow, it is a single mathematical scalar field whose gradient yields the entire fluid velocity vector.
-* **$\mathbf{u} = (u, w)$**: The two-dimensional fluid velocity vector. It is composed of the horizontal velocity component $u$ and the vertical velocity component $w$, calculated as $\mathbf{u} = \nabla \Phi$.
-* **$k$**: The angular wavenumber. Mathematically defined as $k = 2\pi/\lambda$, it is the spatial frequency parameter that must be solved for. It completely dictates all downstream dynamics, including wave energy density, momentum flux, and refraction coefficients.
-* **$k_0$**: The deep-water angular wavenumber. Defined explicitly as $k_0 = \omega^2/g$, it represents the wavenumber strictly in the asymptotic deep-water limit.
-* **$\omega$**: The absolute angular frequency. Defined as $\omega = 2\pi/T$, it is the temporal driving parameter of the wave system observed from a stationary geographic frame.
-* **$c_p$**: The phase velocity or celerity. Calculated as $c_p = \omega/k$, it is the speed at which the physical shape of the wave (the crest) propagates through the domain.
-* **$c_g$**: The group velocity. Calculated as the derivative $c_g = \partial\omega/\partial k$, it is the physical speed at which wave energy and macroscopic wave packages travel across the ocean surface.
-* **$\mathbf{V}$**: The depth-averaged velocity vector of an ambient mean fluid current. It is required to compute Galilean transformations in wave-current interaction fields.
-* **$\sigma$**: The intrinsic relative frequency. It represents the Doppler-shifted wave frequency observed by an entity floating along with the underlying mean fluid current $\mathbf{V}$.
-* **$E$**: Wave energy density. Calculated as $E = \frac{1}{2}\rho g a^2$, it dictates the raw kinetic and potential energy carried by the wave.
-
-## III. Dimensionless Mathematical Parameters & Algorithm Constants
-
-* **$\alpha$**: The independent dimensionless deep-water parameter. It is defined strictly as $\alpha = k_0h$ and serves as the primary standardized input argument for every explicit algorithm in the repository.
-* **$\beta$**: The dependent dimensionless local wavenumber. It is defined as $\beta = kh$ and represents the target output variable that algorithms map from $\alpha$.
-* **$\beta_n, \beta_{n+1}$**: Iterative states. They represent the current ($\beta_n$) and subsequently updated ($\beta_{n+1}$) estimations of the root during a Newton-Raphson loop.
-* **$\beta_0$ (or $\beta_{\text{seed}}$)**: The initial algorithmic guess. It is the starting position provided to the Newton-Raphson solver to bypass geometric instability. 
-* **$\beta_{\text{Beji}}$**: A specific, highly accurate explicit estimate calculated using the Beji (2013) formula, utilized purely as the $\beta_0$ seed for the Simarro and Orfila single-step update.
-* **$m$**: A tunable generalized exponent. Extensively utilized in minimax error optimizations by Fenton & MacKee ($m=1.5$), Yamaguchi & Nonaka ($m=1.485$), and Guo ($m=2.4901$) to tighten algebraic curves across transitional depths.
-* **$\beta_F$**: A temporary nested variable utilized exclusively in the Yamaguchi and Nonaka (YN2) modification to simulate a quasi-Newton corrective step.
-* **$d_n$ ($d_1$ through $d_9$)**: Precisely tuned analytical coefficients utilized within Hunt's 9th Order Padé denominator polynomial expansion.
-* **$N_3(\alpha), D_3(\alpha)$**: The distinct fractional polynomial numerator and denominator arrays formulated in Carvalho's 2025 Padé functions.
-
-## IV. Theoretical Concepts & Physical Phenomena
-
-* **Linear Wave Theory (Airy Theory)**: The fundamental mathematical framework describing wave propagation over a fluid layer. It relies on linearizing boundary conditions by assuming infinitesimal wave steepness ($ak \ll 1$).
-* **Laplace Equation ($\nabla^2 \Phi = 0$)**: The core linear elliptic partial differential equation derived from mass conservation (incompressibility) that the velocity potential must satisfy globally.
-* **Irrotational Flow ($\nabla \times \mathbf{u} = 0$)**: A simplifying fluid dynamic assumption asserting the absence of macroscopic vorticity within the water column, allowing velocity to be mapped from a scalar potential.
-* **Kinematic Bed/Free-Surface Boundary Conditions**: Strict bounding rules. The bed condition dictates zero vertical fluid penetration at the seabed, while the free-surface condition dictates that a particle on the surface must track with the surface's movement.
-* **Dynamic Free-Surface Boundary Condition**: A pressure constraint applying the unsteady Bernoulli equation to ensure fluid surface pressure precisely matches atmospheric pressure.
-* **Transcendental Equation**: An equation (like $\alpha = \beta \tanh \beta$) that cannot be resolved for a specific variable using standard inverse algebra, because the variable acts both as a linear multiplier and the argument of a non-algebraic function.
-* **Deep Water Limit ($\alpha \rightarrow \infty$)**: The physical asymptotic boundary where depth greatly exceeds wavelength, causing $\tanh \beta \rightarrow 1$. Waves become purely dispersive, and speed is completely independent of depth.
-* **Shallow Water Limit ($\alpha \rightarrow 0$)**: The physical asymptotic boundary where waves drag heavily on the seabed, causing $\tanh \beta \rightarrow \beta$. Waves become completely non-dispersive, and speed is strictly dependent on depth ($c_p = \sqrt{gh}$).
-* **Amplitude Dispersion**: A third-order non-linear phenomenon where phase celerity becomes dependent on wave steepness via a $[1 + (ka)^2]$ multiplier, causing large crests to travel faster than small ones.
-* **Benjamin-Feir Modulational Instability**: A direct chaotic consequence of amplitude dispersion driving nonlinear wave-wave interactions, precipitating extreme open-ocean rogue waves.
-* **Hydrodynamic Doppler Shifting**: The Galilean phase shift observed when wave trains propagate across a moving background current, compressing or expanding the intrinsic frequency.
-* **Wave Blocking**: A catastrophic energy accumulation event occurring when an adverse fluid current flows at a velocity strong enough to physically prevent the forward propagation of wave energy.
-* **Pycnocline**: A subsurface density interface separating distinct fluid layers, across which internal waves slowly propagate with colossal vertical amplitudes.
-
-## V. Computational & Algorithmic Methodologies
-
-* **Newton-Raphson Implementation**: A standard iterative root-finding numerical method utilized to converge upon double-precision "mathematical truth" by advancing via tangent line projections.
-* **Residual Function ($f(\beta)$)**: The objective equation rearranged to equal zero. In this module, it is defined as $f(\beta) = \alpha - \beta \tanh \beta$.
-* **Jacobian ($f'(\beta)$)**: The analytical first derivative of the residual function with respect to $\beta$, used as the denominator in the Newton-Raphson step.
-* **Stability Topography & Inflection Point**: A geometric hazard in the residual function occurring specifically at $\beta \approx 1.200$ (where $f''(\beta) = 0$). Tangent slopes here become momentarily flat, throwing subsequent estimates into divergence.
-* **Asymptotic Matching**: An advanced mathematical technique used to engineer formulas that flawlessly decay into the exact theoretical boundaries of both the shallow water limit ($\sqrt{\alpha}$) and deep water limit ($\alpha$).
-* **Gene Expression Programming (GEP)**: A high-performance evolutionary artificial intelligence algorithm utilizing linear chromosomes and branched expression trees to discover highly complex, non-intuitive algebraic relationships.
-* **Padé Approximant**: A highly robust rational function built from the ratio of two separate polynomials. It is mathematically superior to Taylor expansions for simulating poles, asymptotes, and hyperbolic tangent saturation geometries.
-* **Minimax Error Optimization**: A computational curve-fitting strategy designed to equally balance and minimize the absolute maximum positive and negative relative errors across a formula's domain.
-* **Seed-and-Step Paradigm**: A contemporary optimization topology. It evaluates a highly accurate explicit formulation to place the algorithmic state geometrically close to the root, followed by exactly one deterministic Newton update to achieve sub-machine-epsilon precision without looping.
-* **Warp Divergence**: A severe computational thread-stalling penalty occurring on highly parallelized GPU tensor architectures (CUDA/OpenCL) caused by evaluating iterative conditional logic (like `while` loops).
-* **Piecewise Conditional Logic**: The practice of splitting the domain into multiple formulas (e.g., one for shallow, one for deep). It introduces dangerous mathematical discontinuities ("jumps") at the boundary that corrupt phase speed grids.
-* **Maclaurin Series Expansion**: A specific mathematical Taylor series expansion centered at zero, leveraged primarily to derive restricted-domain approximations for the nearshore shallow water zone.
-
----
-
-## References
+The density contrast reduces the effective restoring force relative to a free-surface gravity wave. Finite layer thickness and continuous stratification change the relation. The software does not solve these stratified-flow problems.
+
+## 12. Conclusions
+
+The linear wave-dispersion equation has one positive dimensionless root for each positive input. Numerical iteration offers a reference solution, while explicit formulas provide alternatives with different costs, input restrictions and error distributions. A useful comparison must preserve the exact implemented coefficients, state the sampling interval, distinguish mean from maximum error, and avoid interpreting rounded zeros as exact identity.
+
+The complete catalogue shows three recurring strategies: direct matching of shallow- and deep-water behaviour, fitted expressions or rational functions over a finite domain, and a fixed Newton correction applied to an accurate seed. Several registered methods are algebraically identical, while the fractional rational family achieves very small errors on its fitted interval without possessing the correct unrestricted deep-water asymptote.
+
+For practical use, period and depth must first be converted to the dimensionless input, and the calculated output must then be converted back to wavelength or wavenumber. Numerical accuracy should be selected in relation to the physical model and the sensitivity of the intended calculation. The software is a transparent comparison tool and a collection of scalar formulas; it is not a replacement for assessing the applicability of linear wave theory.
+
+## 13. References
+
+The bibliography records the sources associated with the implemented formulas. Code labels are retained even when they refer to a comparison year rather than the original publication year. The two Hunt titles and two Yamaguchi entries are retained as bibliographic variants from the literature comparison and should not be interpreted as independent verification. The Carvalho (2025) families are repository contributions; a peer-reviewed publication for these exact coefficient sets is not identified here.
 
 1. **Wikipedia**. "Airy wave theory". [Wikipedia](https://en.wikipedia.org/wiki/Airy_wave_theory).
 2. **Wikipedia**. "Dispersion (water waves)". [Wikipedia](https://en.wikipedia.org/wiki/Dispersion_(water_waves)).
@@ -584,14 +1317,14 @@ This glossary lists physical variables, mathematical parameters, algorithmic con
 5. **Vatankhah, A.R. & Aghashariatmadari, Z.** (2013). "Improved explicit approximation of linear dispersion relationship for gravity waves: a discussion", *Coastal Engineering*, 78, 21–22.
 6. **Beji, S.** (2013). "Improved explicit approximation of linear dispersion relationship for gravity waves", *Coastal Engineering*, 73, 11–12.
 7. **You, Z.J.** (2008). "A close approximation of wave dispersion relation for direct calculations",
- *Applied Ocean Research*, 30(2), 141–143.
+*Applied Ocean Research*, 30(2), 141–143.
 8. **Yamaguchi, M. & Nonaka, H.** (2007). "Comparative Study of Explicit Solutions to Wave Dispersion Equation", *Journal of JSCE (Ocean Engineering)*, 63(1), 53–66.
 9. **Yamaguchi, M. and H. Nonaka.** Comparative study of explicit solutions to wave dispersion equation, *Annu. Jour. Eng.*, Ehime Univ., Vol. 6, 2007 in CD-ROM.
 10. **Carvalho, R.** (2006). Unpublished work based on gene expression programming for wave dispersion equations.
 11. **You, Z.J.** "Discussion of 'Simple and explicit solution to the wave dispersion equation'", *Coastal Engineering 45 (2002) 71-74*, Coastal Eng., Vol. 48, pp. 133-135, 2003.
 12. **Guo, J.** (2002). "Simple and explicit solution of the wave dispersion equation", *Coastal Engineering*, 45, 71–74.
 13. **Fenton, J.D. & McKee, W.D.** (1990). "On calculating the lengths of water waves", *Coastal Engineering*, 14, 499–513.
-14. **Fenton, J.D.** "The numerical solution of steady water wave problems", *Computers & Geosciences*, Vol. 4, No. 3, pp. 357–368, 1988.
+14. **Fenton, J.D.** "The numerical solution of steady water wave problems", *Computers & Geosciences*, Vol. 14, No. 3, pp. 357–368, 1988.
 15. **Fenton, J.D.** (1972). "A ninth-order solution for the solitary wave", *Journal of Fluid Mechanics*, 53, 257–271.
 16. **Wu, C. S. and E. B. Thornton.** "Wave numbers of linear progressive waves", *Journal of Waterway, Port, Coastal and Ocean Engineering*, ASCE, Vol. 112, No. 4, pp. 536–540, 1986.
 17. **Nielsen, P.** "Explicit solutions to practical wave problems", *Proc. 19th ICCE*, Vol. 1, pp. 968–982, 1984.
@@ -600,4 +1333,8 @@ This glossary lists physical variables, mathematical parameters, algorithmic con
 20. **Hunt, J. N.** "Direct solution of wave dispersion equation", *J. Waterway, Port, Coastal and Ocean Div.*, Proc. ASCE, Vol. 105, No. WW4, pp. 457–459, 1979.
 21. **Eckart, C.** (1951). "The propagation of gravity waves from deep to shallow water", U.S. Department of Commerce, National Bureau of Standards Circular 521.
 
-These references span classical methods (e.g., Eckart, 1951; Hunt, 1979), modern explicit approximations (e.g., Guo, 2002; Beji, 2013; Vatankhah & Aghashariatmadari, 2013; Simarro & Orfila, 2013; Yu, 2014), pivotal contributions from Fenton and colleagues (Fenton & McKee, 1990; Fenton, 1972), and innovative computational approaches (Carvalho, 2006 & 2025) to improve the dispersion relation accuracy.
+22. **Carvalho, R.** (2025). Explicit and fractional rational approximation families implemented in [wave-disp-equation.py](wave-disp-equation.py).
+
+23. **Guan, C. & Ju, H.** (2005). “Empirical formula for wavelength of ocean wave in finite depth water”, *Chinese Journal of Oceanology and Limnology*, 23(1), 17–22.
+
+24. **Ferreira, C.** (2006). *Gene Expression Programming: Mathematical Modeling by an Artificial Intelligence*, 2nd edition. Springer. Background on GEP; this is not a derivation of the fitted coefficients listed above.
