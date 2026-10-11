@@ -529,11 +529,11 @@ The second denominator term in formula 13 is algebraically equal to $0.718409\al
 
 $$ C_{14}(\alpha)=\frac{\alpha}{[\tanh\sqrt{\alpha}]^{1/\cosh\alpha}} $$
 
-$$ C_{15}(\alpha)=\frac{\alpha}{\sqrt{\tanh\alpha}\,\tanh(\alpha+1/\sqrt{\alpha})} $$
+$$ C_{15}(\alpha)=\frac{\alpha}{\sqrt{\tanh\alpha}\cdot\tanh(\alpha+1/\sqrt{\alpha})} $$
 
 $$ C_{16}(\alpha)=\frac{\alpha}{[\tanh\alpha]^{(\alpha+4)/8}} $$
 
-$$ C_{17}(\alpha)=\frac{\alpha}{\left\{[\tanh\alpha]^{\alpha/\tanh\alpha}\right\}^{1/2}} $$
+$$ C_{17}(\alpha)=\frac{\alpha}{\sqrt{(\tanh\alpha)^{\alpha/\tanh\alpha}}} $$
 
 ### 6.9 Remaining compact expressions: formulas 18–20
 
@@ -541,7 +541,7 @@ $$ C_{18}(\alpha)=\frac{\alpha}{\tanh(\sinh\sqrt{\alpha})} $$
 
 $$ C_{19}(\alpha)=\sqrt{\alpha}+\frac{\alpha^2}{\alpha+4} $$
 
-$$ C_{20}(\alpha)=\frac{\alpha}{\left\{[\sqrt{\tanh\alpha}]^{\tanh\alpha+4}\right\}^{1/4}} $$
+$$ C_{20}(\alpha)=\frac{\alpha}{\sqrt[4]{(\sqrt{\tanh\alpha})^{\tanh\alpha+4}}} $$
 
 Different algebraic constructions can produce similar maximum errors but different distributions of error across depth. The full benchmark is more informative than a ranking based only on expression length.
 
